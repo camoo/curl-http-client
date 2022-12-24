@@ -126,12 +126,6 @@ class Uri implements UriInterface, JsonSerializable
         return $uri;
     }
 
-    /**
-     * Whether the URI has the default port of the current scheme.
-     *
-     * `Psr\Http\Message\UriInterface::getPort` may return null or the standard port. This method can be used
-     * independently of the implementation.
-     */
     public static function isDefaultPort(UriInterface $uri): bool
     {
         return $uri->getPort() === null
