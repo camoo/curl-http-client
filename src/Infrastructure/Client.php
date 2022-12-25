@@ -96,6 +96,9 @@ final class Client implements ClientInterface
         array $data = [],
         string $method = self::GET
     ): RequestInterface {
+        if (!function_exists('curl_version')) {
+            throw new ClientException('PHP-Curl module is missing!', E_USER_ERROR);
+        }
         $config = $this->configuration ?? Configuration::create();
 
         return new Request($config, $url, $headers, $data, $method);
