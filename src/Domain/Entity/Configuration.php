@@ -8,17 +8,10 @@ final class Configuration
 {
     private const DEFAULT_TIMEOUT = 30;
 
-    /** @var string */
-    private const USER_AGENT = 'CamooWatcher/1.0 (+https://www.camoo.hosting)';
+    private const USER_AGENT = 'Camoo/Curl/Http/1.0 (+https://www.camoo.hosting)';
 
-    /**
-     * Debug file location (log to STDOUT by default)
-     *
-     * @var string
-     */
     private const DEBUG_FILE = 'php://output';
 
-    /** Debug file location (log to STDOUT by default) */
     private string $tempFolderPath;
 
     private static ?self $defaultConfiguration = null;

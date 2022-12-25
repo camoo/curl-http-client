@@ -35,7 +35,10 @@ class HeaderResponse implements HeaderResponseInterface
 
     public function getHeaders(): array
     {
-        return $this->headerCollection->getIterator()->getArrayCopy();
+        return array_map(
+            fn (HttpField $field) => [$field->getName() => $field->getValue()],
+            $this->headerCollection->getIterator()->getArrayCopy()
+        );
     }
 
     public function getHeader(string $name): ?HttpField

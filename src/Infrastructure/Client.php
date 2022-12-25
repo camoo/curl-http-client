@@ -13,22 +13,16 @@ use Camoo\Http\Curl\Infrastructure\Exception\ClientException;
 
 final class Client implements ClientInterface
 {
-    /** @var string */
     private const GET = 'GET';
 
-    /** @var string */
     private const HEAD = 'HEAD';
 
-    /** @var string */
     private const POST = 'POST';
 
-    /** @var string */
     private const PUT = 'PUT';
 
-    /** @var string */
     private const PATCH = 'PATCH';
 
-    /** @var string */
     private const DELETE = 'DELETE';
 
     public function __construct(private ?Configuration $configuration = null)
@@ -37,35 +31,35 @@ final class Client implements ClientInterface
 
     public function head(string $url, array $headers = []): ResponseInterface
     {
-        return $this->sendRequest($this->getRequest($url, $headers, [], self::HEAD));
+        return $this->sendRequest($this->buildRequest($url, $headers, [], self::HEAD));
     }
 
     public function get(string $url, array $headers = []): ResponseInterface
     {
-        return $this->sendRequest($this->getRequest($url, $headers));
+        return $this->sendRequest($this->buildRequest($url, $headers));
     }
 
     public function post(string $url, array $data = [], array $headers = []): ResponseInterface
     {
-        return $this->sendRequest($this->getRequest($url, $headers, $data, self::POST));
+        return $this->sendRequest($this->buildRequest($url, $headers, $data, self::POST));
     }
 
     public function put(string $url, array $data = [], array $headers = []): ResponseInterface
     {
-        return $this->sendRequest($this->getRequest($url, $headers, $data, self::PUT));
+        return $this->sendRequest($this->buildRequest($url, $headers, $data, self::PUT));
     }
 
     public function patch(string $url, array $data = [], array $headers = []): ResponseInterface
     {
-        return $this->sendRequest($this->getRequest($url, $headers, $data, self::PATCH));
+        return $this->sendRequest($this->buildRequest($url, $headers, $data, self::PATCH));
     }
 
     public function delete(string $url, array $headers = []): ResponseInterface
     {
-        return $this->sendRequest($this->getRequest($url, $headers, [], self::DELETE));
+        return $this->sendRequest($this->buildRequest($url, $headers, [], self::DELETE));
     }
 
-    public function sendRequest(RequestInterface $request): ResponseInterface
+    private function sendRequest(RequestInterface $request): ResponseInterface
     {
         $handle = $request->getRequestHandle();
         if (false === $handle) {
@@ -93,13 +87,10 @@ final class Client implements ClientInterface
         $response->withBody(new Stream($body));
         $response->withStatus((int)$status['http_code'], $headerResponse->getHeaderEntity()->getMessage());
 
-        var_export($response->getHeader('x-content-type-options'));
-        die;
-
         return $response;
     }
 
-    public function getRequest(
+    private function buildRequest(
         string $url,
         array $headers = [],
         array $data = [],

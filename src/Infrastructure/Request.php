@@ -20,22 +20,16 @@ class Request implements RequestInterface
 {
     use MessageTrait;
 
-    /** @var string */
     private const GET = 'GET';
 
-    /** @var string */
     private const HEAD = 'HEAD';
 
-    /** @var string */
     private const POST = 'POST';
 
-    /** @var string */
     private const PUT = 'PUT';
 
-    /** @var string */
     private const PATCH = 'PATCH';
 
-    /** @var string */
     private const DELETE = 'DELETE';
 
     private false|CurlHandle $handle;
@@ -172,7 +166,7 @@ class Request implements RequestInterface
             $isJson = $contentType === 'application/json';
         }
 
-        $url = $this->uri->__toString();
+        $url = (string)$this->uri;
         curl_setopt($this->handle, CURLOPT_HTTPHEADER, $headers);
 
         self::applyCurlHttps($this->handle, $url);

@@ -12,12 +12,6 @@ use function strtr;
 
 class Uri implements UriInterface, JsonSerializable
 {
-    /**
-     * Absolute http and https URIs require a host per RFC 7230 Section 2.7
-     * but in generic URIs the host can be empty. So for http(s) URIs
-     * we apply this default host when no host is given yet to form a
-     * valid URI.
-     */
     private const HTTP_DEFAULT_HOST = 'localhost';
 
     private const DEFAULT_PORTS = [
@@ -38,30 +32,20 @@ class Uri implements UriInterface, JsonSerializable
 
     private const CHAR_SUB_DELIMITERS = '!\$&\'\(\)\*\+,;=';
 
-    //private const QUERY_SEPARATORS_REPLACEMENT = ['=' => '%3D', '&' => '%26'];
-
-    /** @var string Uri scheme. */
     private string $scheme = '';
 
-    /** @var string Uri user info. */
     private string $userInfo = '';
 
-    /** @var string Uri host. */
     private string $host = '';
 
-    /** @var int|null Uri port. */
     private ?int $port;
 
-    /** @var string Uri path. */
     private string $path = '';
 
-    /** @var string Uri query string. */
     private string $query = '';
 
-    /** @var string Uri fragment. */
     private string $fragment = '';
 
-    /** @var string|null String representation */
     private ?string $composedComponents = null;
 
     /** @throws Exception */
