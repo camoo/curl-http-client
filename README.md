@@ -6,8 +6,13 @@ PSR-7 standard
 ### without dependency injection
 ```php
 use Camoo\Http\Curl\Infrastructure\Client;
+use Camoo\Http\Curl\Domain\Entity\Configuration;
 
-$client = new Client();
+$configuration = Configuration::create();
+
+// activate debug
+// $configuration->setDebug(true);
+$client = new Client($configuration);
 
 $uri = 'https://api.example.com/v1/users';
 
