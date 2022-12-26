@@ -59,7 +59,7 @@ final class Client implements ClientInterface
         return $this->sendRequest($this->buildRequest($url, $headers, [], self::DELETE));
     }
 
-    private function sendRequest(RequestInterface $request): ResponseInterface
+    public function sendRequest(RequestInterface $request): ResponseInterface
     {
         $handle = $request->getRequestHandle();
         if (false === $handle) {
@@ -73,17 +73,13 @@ final class Client implements ClientInterface
         curl_close($handle);
 
         $headers = substr($responses, 0, $status['header_size']);
-
         $headerResponse = new HeaderResponse($headers);
-
         $body = substr($responses, $status['header_size']);
-
         $response = new Response($headerResponse);
 
         if ($errno !== 0 || !isset($status['http_code'])) {
             throw new ClientException($error);
         }
-
         $response->withBody(new Stream($body));
         $response->withStatus((int)$status['http_code'], $headerResponse->getHeaderEntity()->getMessage());
 
