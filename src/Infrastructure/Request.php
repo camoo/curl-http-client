@@ -167,7 +167,12 @@ class Request implements RequestInterface
         }
 
         $url = (string)$this->uri;
-        curl_setopt($this->handle, CURLOPT_HTTPHEADER, $headers);
+        $curlHeaders = array_map(
+            fn (string $val, mixed $key) => trim($key) . ': ' . trim($val),
+            $this->headers,
+            array_keys($headers)
+        );
+        curl_setopt($this->handle, CURLOPT_HTTPHEADER, $curlHeaders);
 
         self::applyCurlHttps($this->handle, $url);
         curl_setopt($this->handle, CURLOPT_RETURNTRANSFER, 1);
