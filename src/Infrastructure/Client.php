@@ -75,12 +75,11 @@ final class Client implements ClientInterface
         $headers = substr($responses, 0, $status['header_size']);
         $headerResponse = new HeaderResponse($headers);
         $body = substr($responses, $status['header_size']);
-        $response = new Response($headerResponse);
 
         if ($errno !== 0 || !isset($status['http_code'])) {
             throw new ClientException($error);
         }
-        $response->withBody(new Stream($body));
+        $response = new Response($headerResponse, new Stream($body));
         $response->withStatus((int)$status['http_code'], $headerResponse->getHeaderEntity()->getMessage());
 
         return $response;
