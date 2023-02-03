@@ -47,10 +47,7 @@ class Request implements RequestInterface
     ) {
         $this->handle = curl_init();
         $this->validateMethod($this->method);
-        if (!($this->uri instanceof UriInterface)) {
-            $this->uri = new Uri($uri);
-        }
-
+        $this->ensureUri();
         if (is_string($this->body)) {
             $this->body = new Stream($this->body);
         }
@@ -152,8 +149,32 @@ class Request implements RequestInterface
         ];
     }
 
+    private function ensureUri(): void
+    {
+        if ($this->method !== self::GET) {
+            return;
+        }
+
+        if ($this->uri instanceof UriInterface) {
+            return;
+        }
+
+        if (empty($this->data)) {
+            return;
+        }
+
+        $uri = $this->uri;
+
+        $query = !str_contains($uri, '?') ? '?' : '&';
+        $uri .= $query;
+        $uri .= http_build_query($this->data);
+
+        $this->uri = new Uri($uri);
+    }
+
     private function setRequest(): void
     {
+        $userAgent = $this->getUserAgent();
         $headers = $this->headers;
 
         if (isset($headers['type'])) {
@@ -167,18 +188,21 @@ class Request implements RequestInterface
         }
 
         $url = (string)$this->uri;
-        $curlHeaders = array_map(
-            fn (string $val, mixed $key) => trim($key) . ': ' . trim($val),
-            $this->headers,
-            array_keys($headers)
-        );
-        curl_setopt($this->handle, CURLOPT_HTTPHEADER, $curlHeaders);
+
+        if (!empty($this->headers)) {
+            $curlHeaders = array_map(
+                fn (string $val, mixed $key) => trim($key) . ': ' . trim($val),
+                $this->headers,
+                array_keys($headers)
+            );
+            curl_setopt($this->handle, CURLOPT_HTTPHEADER, $curlHeaders);
+        }
 
         self::applyCurlHttps($this->handle, $url);
         curl_setopt($this->handle, CURLOPT_RETURNTRANSFER, 1);
         curl_setopt($this->handle, CURLOPT_FOLLOWLOCATION, true);
         curl_setopt($this->handle, CURLOPT_MAXREDIRS, 1);
-        curl_setopt($this->handle, CURLOPT_USERAGENT, $this->config->getUserAgent());
+        curl_setopt($this->handle, CURLOPT_USERAGENT, $userAgent);
         curl_setopt($this->handle, CURLOPT_HEADER, true);
         curl_setopt($this->handle, CURLOPT_NOBODY, 0);
         curl_setopt($this->handle, CURLOPT_URL, $url);
@@ -249,5 +273,21 @@ class Request implements RequestInterface
         if (trim($method) === '') {
             throw new InvalidArgumentException('Method must be a non-empty string.');
         }
+    }
+
+    private function getUserAgent(): string
+    {
+        $userAgent = $this->headers['user-agent'] ?? null;
+        if (null === $userAgent) {
+            $userAgent = $this->headers['User-Agent'] ?? null;
+        } else {
+            unset($this->headers['user-agent']);
+        }
+
+        if ($userAgent) {
+            unset($this->headers['User-Agent']);
+        }
+
+        return $userAgent ?? $this->config->getUserAgent();
     }
 }
