@@ -214,22 +214,30 @@ class Request implements RequestInterface
         curl_setopt($this->handle, CURLOPT_MAXREDIRS, 1);
         curl_setopt($this->handle, CURLOPT_USERAGENT, $userAgent);
         curl_setopt($this->handle, CURLOPT_HEADER, true);
-        $this->applyAuth($auth);
+        $this->applyBasicAuth($auth);
         curl_setopt($this->handle, CURLOPT_NOBODY, 0);
         curl_setopt($this->handle, CURLOPT_URL, $url);
         $this->addRequestData($this->handle, $this->method, $requestData, $isJson);
         $this->parseOptions($this->handle);
     }
 
-    private function applyAuth(?array $auth): void
+    private function applyBasicAuth(?array $auth): void
     {
         if (empty($auth)) {
             return;
         }
-        curl_setopt($this->handle, CURLOPT_USERPWD, $auth['username'] ?? '' . ':' . $auth['password'] ?? '');
-        if ($auth['type'] === 'Basic') {
-            curl_setopt($this->handle, CURLOPT_HTTPAUTH, CURLAUTH_BASIC);
+        $type = $auth['type'] ?? '';
+        if (empty($type)) {
+            return;
         }
+        $type = strtolower($type);
+        if ($type !== 'basic') {
+            return;
+        }
+        $username = $auth['username'] ?? '';
+        $password = $auth['password'] ?? '';
+        curl_setopt($this->handle, CURLOPT_USERPWD, $username . ':' . $password);
+        curl_setopt($this->handle, CURLOPT_HTTPAUTH, CURLAUTH_BASIC);
     }
 
     private function addRequestData(CurlHandle $handle, string $method, array|string $data, bool $isJson = false): void
