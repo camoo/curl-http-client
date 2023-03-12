@@ -258,7 +258,9 @@ class Request implements RequestInterface
             if ($this->body instanceof StreamInterface) {
                 $postData = $this->body->getContents();
             }
-            curl_setopt($handle, CURLOPT_POSTFIELDS, $postData);
+            if (!empty($data)) {
+                curl_setopt($handle, CURLOPT_POSTFIELDS, $postData);
+            }
         }
     }
 
