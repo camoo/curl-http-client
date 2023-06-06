@@ -26,7 +26,7 @@ class Response implements ResponseInterface
         return $this->statusCode ?: (int)$this->headerResponse->getCode();
     }
 
-    public function withStatus($code, $reasonPhrase = ''): self
+    public function withStatus(int $code, string $reasonPhrase = ''): self
     {
         $this->statusCode = $code;
         $this->reasonPhrase = $reasonPhrase;

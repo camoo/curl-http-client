@@ -66,7 +66,7 @@ class HeaderResponse implements HeaderResponseInterface
     /** @throws HttpFieldNotFoundOnCollection */
     public function getContentLength(): string
     {
-        return $this->parser->get('Content-Length');
+        return $this->parser->get('content-length');
     }
 
     /** @throws HttpFieldNotFoundOnCollection */
