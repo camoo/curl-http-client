@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Camoo\Http\Curl\Infrastructure;
 
+use Camoo\Http\Curl\Application\Query\CurlQueryInterface;
 use Camoo\Http\Curl\Domain\Entity\Configuration;
 use Camoo\Http\Curl\Domain\Entity\Stream;
 use Camoo\Http\Curl\Domain\Entity\Uri;
@@ -12,7 +13,7 @@ use Camoo\Http\Curl\Domain\Header\HeaderResponseInterface;
 use Camoo\Http\Curl\Domain\Request\RequestInterface;
 use Camoo\Http\Curl\Domain\Trait\MessageTrait;
 use Camoo\Http\Curl\Infrastructure\Exception\ClientException;
-use CurlHandle;
+use Camoo\Http\Curl\Infrastructure\Query\CurlRequestQuery;
 use Psr\Http\Message\StreamInterface;
 use Psr\Http\Message\UriInterface;
 
@@ -22,17 +23,11 @@ class Request implements RequestInterface
 
     private const GET = 'GET';
 
-    private const HEAD = 'HEAD';
-
     private const POST = 'POST';
 
     private const PUT = 'PUT';
 
     private const PATCH = 'PATCH';
-
-    private const DELETE = 'DELETE';
-
-    private false|CurlHandle $handle;
 
     private ?string $requestTarget = null;
 
@@ -44,8 +39,9 @@ class Request implements RequestInterface
         private string $method,
         private ?HeaderResponseInterface $headerResponse = null,
         private StreamInterface|string|null $body = null,
+        private ?CurlQueryInterface $curlQuery = null
     ) {
-        $this->handle = curl_init();
+        $this->curlQuery = $this->curlQuery ?? new CurlRequestQuery(curl_init());
         $this->validateMethod($this->method);
         $this->ensureUri();
         if (is_string($this->body)) {
@@ -70,7 +66,7 @@ class Request implements RequestInterface
         return $target;
     }
 
-    public function withRequestTarget($requestTarget): self
+    public function withRequestTarget(string $requestTarget): self
     {
         if (preg_match('#\s#', $requestTarget)) {
             throw new InvalidArgumentException(
@@ -89,7 +85,7 @@ class Request implements RequestInterface
         return $this->method;
     }
 
-    public function withMethod($method): self
+    public function withMethod(string $method): self
     {
         $this->validateMethod($method);
         $new = clone $this;
@@ -103,7 +99,7 @@ class Request implements RequestInterface
         return $this->uri;
     }
 
-    public function withUri(UriInterface $uri, $preserveHost = false): self
+    public function withUri(UriInterface $uri, bool $preserveHost = false): self
     {
         if ($uri === $this->uri) {
             return $this;
@@ -115,15 +111,11 @@ class Request implements RequestInterface
         return $new;
     }
 
-    public function getRequestHandle(): CurlHandle|false
+    public function getRequestHandle(): CurlQueryInterface
     {
-        if (!$this->handle) {
-            return false;
-        }
-
         $this->setRequest();
 
-        return $this->handle;
+        return $this->curlQuery;
     }
 
     protected function mapTypeHeader(string $type): array
@@ -205,20 +197,20 @@ class Request implements RequestInterface
                 $this->headers,
                 array_keys($headers)
             );
-            curl_setopt($this->handle, CURLOPT_HTTPHEADER, $curlHeaders);
+            $this->curlQuery->setOption(CURLOPT_HTTPHEADER, $curlHeaders);
         }
 
-        self::applyCurlHttps($this->handle, $url);
-        curl_setopt($this->handle, CURLOPT_RETURNTRANSFER, 1);
-        curl_setopt($this->handle, CURLOPT_FOLLOWLOCATION, true);
-        curl_setopt($this->handle, CURLOPT_MAXREDIRS, 1);
-        curl_setopt($this->handle, CURLOPT_USERAGENT, $userAgent);
-        curl_setopt($this->handle, CURLOPT_HEADER, true);
+        $this->applyCurlHttps($url);
+        $this->curlQuery->setOption(CURLOPT_RETURNTRANSFER, 1);
+        $this->curlQuery->setOption(CURLOPT_FOLLOWLOCATION, true);
+        $this->curlQuery->setOption(CURLOPT_MAXREDIRS, 1);
+        $this->curlQuery->setOption(CURLOPT_USERAGENT, $userAgent);
+        $this->curlQuery->setOption(CURLOPT_HEADER, true);
         $this->applyHttpAuth($auth);
-        curl_setopt($this->handle, CURLOPT_NOBODY, 0);
-        curl_setopt($this->handle, CURLOPT_URL, $url);
-        $this->addRequestData($this->handle, $this->method, $requestData, $isJson);
-        $this->parseOptions($this->handle);
+        $this->curlQuery->setOption(CURLOPT_NOBODY, 0);
+        $this->curlQuery->setOption(CURLOPT_URL, $url);
+        $this->addRequestData($this->method, $requestData, $isJson);
+        $this->parseOptions();
     }
 
     private function applyHttpAuth(?array $auth): void
@@ -228,25 +220,25 @@ class Request implements RequestInterface
         }
         $type = $auth['type'] ?? '';
         if (empty($type)) {
-            curl_setopt($this->handle, CURLOPT_HTTPAUTH, CURLAUTH_NONE);
+            $this->curlQuery->setOption(CURLOPT_HTTPAUTH, CURLAUTH_NONE);
         }
         $type = strtolower($type);
         if ($type === 'basic') {
-            curl_setopt($this->handle, CURLOPT_HTTPAUTH, CURLAUTH_BASIC);
+            $this->curlQuery->setOption(CURLOPT_HTTPAUTH, CURLAUTH_BASIC);
         }
         if ($type === 'digest') {
-            curl_setopt($this->handle, CURLOPT_HTTPAUTH, CURLAUTH_DIGEST);
+            $this->curlQuery->setOption(CURLOPT_HTTPAUTH, CURLAUTH_DIGEST);
         }
         $username = $auth['username'] ?? '';
         $password = $auth['password'] ?? '';
-        curl_setopt($this->handle, CURLOPT_USERPWD, $username . ':' . $password);
+        $this->curlQuery->setOption(CURLOPT_USERPWD, $username . ':' . $password);
     }
 
-    private function addRequestData(CurlHandle $handle, string $method, array|string $data, bool $isJson = false): void
+    private function addRequestData(string $method, array|string $data, bool $isJson = false): void
     {
-        curl_setopt($handle, CURLOPT_CUSTOMREQUEST, $method);
+        $this->curlQuery->setOption(CURLOPT_CUSTOMREQUEST, $method);
         if ($method === self::POST) {
-            curl_setopt($handle, CURLOPT_POST, 1);
+            $this->curlQuery->setOption(CURLOPT_POST, 1);
         }
 
         if (in_array($method, [self::POST, self::PUT, self::PATCH], true)) {
@@ -259,46 +251,46 @@ class Request implements RequestInterface
                 $postData = $this->body->getContents();
             }
             if (!empty($data)) {
-                curl_setopt($handle, CURLOPT_POSTFIELDS, $postData);
+                $this->curlQuery->setOption(CURLOPT_POSTFIELDS, $postData);
             }
         }
     }
 
-    private static function applyCurlHttps(CurlHandle $handle, string $url): void
+    private function applyCurlHttps(string $url): void
     {
         if (stripos($url, 'https://') === false) {
             return;
         }
 
-        curl_setopt($handle, CURLOPT_SSL_VERIFYPEER, 1);
-        curl_setopt($handle, CURLOPT_SSL_VERIFYHOST, 2);
+        $this->curlQuery->setOption(CURLOPT_SSL_VERIFYPEER, 1);
+        $this->curlQuery->setOption(CURLOPT_SSL_VERIFYHOST, 2);
     }
 
-    private function parseOptions(CurlHandle $handle): void
+    private function parseOptions(): void
     {
-        curl_setopt($handle, CURLOPT_TIMEOUT, $this->config->getTimeout());
+        $this->curlQuery->setOption(CURLOPT_TIMEOUT, $this->config->getTimeout());
 
         if ($this->config->getUsername() && $this->config->getPassword()) {
-            curl_setopt($handle, CURLOPT_USERNAME, $this->config->getUsername());
-            curl_setopt($handle, CURLOPT_PASSWORD, $this->config->getPassword());
+            $this->curlQuery->setOption(CURLOPT_USERNAME, $this->config->getUsername());
+            $this->curlQuery->setOption(CURLOPT_PASSWORD, $this->config->getPassword());
         }
 
         if ($this->config->getReferer()) {
-            curl_setopt($handle, CURLOPT_REFERER, $this->config->getReferer());
+            $this->curlQuery->setOption(CURLOPT_REFERER, $this->config->getReferer());
         }
 
-        $this->debug($handle);
+        $this->debug();
     }
 
-    private function debug(CurlHandle $handle): void
+    private function debug(): void
     {
         if (!$this->config->getDebug()) {
             return;
         }
 
-        curl_setopt($handle, CURLOPT_VERBOSE, true);
+        $this->curlQuery->setOption(CURLOPT_VERBOSE, true);
         $streamVerboseHandle = fopen($this->config->getDebugFile(), 'a');
-        curl_setopt($handle, CURLOPT_STDERR, $streamVerboseHandle);
+        $this->curlQuery->setOption(CURLOPT_STDERR, $streamVerboseHandle);
     }
 
     private function validateMethod(string $method): void

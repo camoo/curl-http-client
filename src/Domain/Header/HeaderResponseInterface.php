@@ -8,6 +8,7 @@ use BFunky\HttpParser\Entity\HttpField;
 use BFunky\HttpParser\Entity\HttpHeaderInterface;
 use BFunky\HttpParser\Entity\HttpResponseHeader;
 use BFunky\HttpParser\Exception\HttpFieldNotFoundOnCollection;
+use Throwable;
 
 interface HeaderResponseInterface
 {
@@ -34,6 +35,9 @@ interface HeaderResponseInterface
     /** @throws HttpFieldNotFoundOnCollection */
     public function remove(string $name): void;
 
+    /**
+     * @throws Throwable
+     */
     public function getHeaders(): array;
 
     public function getHeader(string $name): ?HttpField;

@@ -19,12 +19,7 @@ final class Stream implements StreamInterface
     /** @param string|resource|null $stream */
     public function __construct(private $stream, string $accessMode = 'r+')
     {
-        if (is_string($this->stream)) {
-            $body = $this->stream;
-            $this->stream = fopen('php://memory', $accessMode);
-            fwrite($this->stream, $body);
-            rewind($this->stream);
-        }
+        $this->applyStream($accessMode);
 
         if (!is_resource($this->stream) || 'stream' !== get_resource_type($this->stream)) {
             throw new StreamInvalidArgumentException(
@@ -199,5 +194,16 @@ final class Stream implements StreamInterface
         $metaData = stream_get_meta_data($this->stream);
 
         return $metaData[$key] ?? null;
+    }
+
+    private function applyStream(string $accessMode): void
+    {
+        if (!is_string($this->stream)) {
+            return;
+        }
+        $body = $this->stream;
+        $this->stream = fopen('php://memory', $accessMode);
+        fwrite($this->stream, $body);
+        rewind($this->stream);
     }
 }
