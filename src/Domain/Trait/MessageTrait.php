@@ -15,7 +15,7 @@ trait MessageTrait
         return $this->headerResponse->getHeaderEntity()->getProtocol();
     }
 
-    public function withProtocolVersion($version): MessageInterface
+    public function withProtocolVersion(string $version): MessageInterface
     {
         $this->headerResponse->getHeaderEntity()->setProtocol($version);
 
@@ -27,12 +27,12 @@ trait MessageTrait
         return $this->headerResponse->getHeaders();
     }
 
-    public function hasHeader($name): bool
+    public function hasHeader(string $name): bool
     {
         return $this->headerResponse->exists($name);
     }
 
-    public function getHeader($name): array
+    public function getHeader(string $name): array
     {
         $header = $this->headerResponse->getHeader($name);
 
@@ -41,12 +41,12 @@ trait MessageTrait
         ];
     }
 
-    public function getHeaderLine($name): string
+    public function getHeaderLine(string $name): string
     {
         return $this->headerResponse->getHeaderLine($name) ?? '';
     }
 
-    public function withHeader($name, $value): MessageInterface
+    public function withHeader(string $name, $value): MessageInterface
     {
         if ($this->headerResponse->exists($name)) {
             $this->headerResponse->remove($name);
@@ -57,7 +57,7 @@ trait MessageTrait
         return $this;
     }
 
-    public function withAddedHeader($name, $value): MessageInterface
+    public function withAddedHeader(string $name, $value): MessageInterface
     {
         $field = new HttpField($name, $value);
         $this->headerResponse->withHeader($field);
@@ -65,7 +65,7 @@ trait MessageTrait
         return $this;
     }
 
-    public function withoutHeader($name): MessageInterface
+    public function withoutHeader(string $name): MessageInterface
     {
         if ($this->headerResponse->exists($name)) {
             $this->headerResponse->remove($name);
