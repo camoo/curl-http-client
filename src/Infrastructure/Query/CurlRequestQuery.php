@@ -10,7 +10,7 @@ use CurlHandle;
 
 final class CurlRequestQuery implements CurlQueryInterface
 {
-    public function __construct(private CurlHandle|bool $handle)
+    public function __construct(private CurlHandle|bool|null $handle = null)
     {
         $this->validateHandle();
     }
@@ -50,7 +50,7 @@ final class CurlRequestQuery implements CurlQueryInterface
         if (!function_exists('curl_version')) {
             throw new ClientException('PHP-Curl module is missing!', E_USER_ERROR);
         }
-
+        $this->handle = $this->handle ?? curl_init();
         if (false === $this->handle) {
             throw new ClientException('Request Handle was not initiated successfully !');
         }
