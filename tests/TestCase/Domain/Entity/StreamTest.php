@@ -65,4 +65,49 @@ class StreamTest extends TestCase
         $stream->detach();
         $stream->read(2);
     }
+
+    public function testCannotTell(): void
+    {
+        $this->expectException(StreamException::class);
+        $stream = new Stream('{"unit": "tell"}');
+        $stream->detach();
+        $stream->tell();
+    }
+
+    public function testCannotSeek(): void
+    {
+        $this->expectException(StreamException::class);
+        $stream = new Stream('{"unit": "seek"}');
+        $stream->detach();
+        $stream->seek(2);
+    }
+
+    public function testCannotWrite(): void
+    {
+        $this->expectException(StreamException::class);
+        $stream = new Stream('{"unit": "write"}');
+        $stream->detach();
+        $stream->write('foo');
+    }
+
+    public function testCannotReadByNegativeLength(): void
+    {
+        $this->expectException(StreamException::class);
+        $stream = new Stream('{"unit": "read"}');
+        $stream->read(-1);
+    }
+
+    public function testGetMetadataReturnsNull(): void
+    {
+        $stream = new Stream('{"unit": "meta"}');
+        $stream->detach();
+        $this->assertNull($stream->getMetadata());
+    }
+
+    public function testIsReadableReturnsFalse(): void
+    {
+        $stream = new Stream('{"unit": "isReadable"}');
+        $stream->detach();
+        $this->assertFalse($stream->isReadable());
+    }
 }
