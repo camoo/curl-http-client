@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Camoo\Http\Curl\Infrastructure;
 
+use Camoo\Http\Curl\Application\Query\CurlQueryInterface;
 use Camoo\Http\Curl\Domain\Client\ClientInterface;
 use Camoo\Http\Curl\Domain\Entity\Configuration;
 use Camoo\Http\Curl\Domain\Entity\Stream;
@@ -25,8 +26,10 @@ final class Client implements ClientInterface
 
     private const DELETE = 'DELETE';
 
-    public function __construct(private ?Configuration $configuration = null)
-    {
+    public function __construct(
+        private ?Configuration $configuration = null,
+        private ?CurlQueryInterface $curlQuery = null
+    ) {
     }
 
     public function head(string $url, array $headers = []): ResponseInterface
@@ -62,21 +65,18 @@ final class Client implements ClientInterface
     public function sendRequest(RequestInterface $request): ResponseInterface
     {
         $handle = $request->getRequestHandle();
-        if (false === $handle) {
-            throw new ClientException('Request Handle was not initiated successfully !');
-        }
 
-        $responses = curl_exec($handle);
-        $status = curl_getinfo($handle);
-        $errno = curl_errno($handle);
-        $error = curl_error($handle);
-        curl_close($handle);
+        $responses = $handle->execute();
+        $status = $handle->getInfo();
+        $errorNumber = $handle->getErrorNumber();
+        $error = $handle->getErrorMessage();
+        $handle->close();
 
         $headers = substr($responses, 0, $status['header_size']);
         $headerResponse = new HeaderResponse($headers);
         $body = substr($responses, $status['header_size']);
 
-        if ($errno !== 0 || !isset($status['http_code'])) {
+        if ($errorNumber !== 0 || !isset($status['http_code'])) {
             throw new ClientException($error);
         }
         $response = new Response($headerResponse, new Stream($body));
@@ -91,11 +91,8 @@ final class Client implements ClientInterface
         array $data = [],
         string $method = self::GET
     ): RequestInterface {
-        if (!function_exists('curl_version')) {
-            throw new ClientException('PHP-Curl module is missing!', E_USER_ERROR);
-        }
         $config = $this->configuration ?? Configuration::create();
 
-        return new Request($config, $url, $headers, $data, $method);
+        return new Request($config, $url, $headers, $data, $method, null, null, $this->curlQuery);
     }
 }

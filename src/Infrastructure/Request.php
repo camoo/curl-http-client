@@ -41,7 +41,7 @@ class Request implements RequestInterface
         private StreamInterface|string|null $body = null,
         private ?CurlQueryInterface $curlQuery = null
     ) {
-        $this->curlQuery = $this->curlQuery ?? new CurlRequestQuery(curl_init());
+        $this->curlQuery = $this->curlQuery ?? new CurlRequestQuery();
         $this->validateMethod($this->method);
         $this->ensureUri();
         if (is_string($this->body)) {
