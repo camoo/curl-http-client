@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Camoo\Http\Curl\Domain\Exception;
 
-final class Exception extends \Exception
+use RuntimeException;
+
+final class Exception extends RuntimeException
 {
 }

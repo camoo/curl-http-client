@@ -143,15 +143,13 @@ class Request implements RequestInterface
 
     private function ensureUri(): void
     {
-        if ($this->method !== self::GET) {
-            return;
-        }
-
         if ($this->uri instanceof UriInterface) {
             return;
         }
 
-        if (empty($this->data)) {
+        if (empty($this->data) || $this->method !== self::GET) {
+            $this->uri = new Uri($this->uri);
+
             return;
         }
 
