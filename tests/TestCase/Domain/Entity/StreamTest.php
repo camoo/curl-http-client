@@ -102,6 +102,7 @@ class StreamTest extends TestCase
         $stream = new Stream('{"unit": "meta"}');
         $stream->detach();
         $this->assertNull($stream->getMetadata());
+        $this->assertNull($stream->getSize());
     }
 
     public function testIsReadableReturnsFalse(): void
@@ -109,5 +110,14 @@ class StreamTest extends TestCase
         $stream = new Stream('{"unit": "isReadable"}');
         $stream->detach();
         $this->assertFalse($stream->isReadable());
+        $this->assertFalse($stream->isSeekable());
+        $this->assertFalse($stream->isWritable());
+    }
+
+    public function testCannotToString(): void
+    {
+        $stream = new Stream('{"unit": "toString"}');
+        $stream->detach();
+        $this->assertSame('', $stream->__toString());
     }
 }
