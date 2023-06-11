@@ -166,7 +166,7 @@ class Uri implements UriInterface, JsonSerializable
         return $this->fragment;
     }
 
-    public function withScheme(string $scheme): UriInterface
+    public function withScheme(string $scheme): self
     {
         $scheme = $this->filterScheme($scheme);
 
@@ -183,7 +183,7 @@ class Uri implements UriInterface, JsonSerializable
         return $new;
     }
 
-    public function withUserInfo(string $user, ?string $password = null): UriInterface
+    public function withUserInfo(string $user, ?string $password = null): self
     {
         $info = $this->filterUserInfoComponent($user);
         if ($password !== null) {
@@ -202,7 +202,7 @@ class Uri implements UriInterface, JsonSerializable
         return $new;
     }
 
-    public function withHost(string $host): UriInterface
+    public function withHost(string $host): self
     {
         $host = $this->filterHost($host);
 
@@ -218,7 +218,7 @@ class Uri implements UriInterface, JsonSerializable
         return $new;
     }
 
-    public function withPort(?int $port): UriInterface
+    public function withPort(?int $port): self
     {
         $port = $this->filterPort((int)$port);
 
@@ -235,7 +235,7 @@ class Uri implements UriInterface, JsonSerializable
         return $new;
     }
 
-    public function withPath(string $path): UriInterface
+    public function withPath(string $path): self
     {
         $path = $this->filterPath($path);
 
@@ -251,7 +251,7 @@ class Uri implements UriInterface, JsonSerializable
         return $new;
     }
 
-    public function withQuery(string $query): UriInterface
+    public function withQuery(string $query): self
     {
         $query = $this->filterQueryAndFragment($query);
 
@@ -266,7 +266,7 @@ class Uri implements UriInterface, JsonSerializable
         return $new;
     }
 
-    public function withFragment(string $fragment): UriInterface
+    public function withFragment(string $fragment): self
     {
         $fragment = $this->filterQueryAndFragment($fragment);
 
@@ -358,7 +358,7 @@ class Uri implements UriInterface, JsonSerializable
     {
         return preg_replace_callback(
             '/(?:[^%' . self::CHAR_UNRESERVED . self::CHAR_SUB_DELIMITERS . ']+|%(?![A-Fa-f0-9]{2}))/',
-            [$this, 'rawurlencodeMatchZero'],
+            [$this, 'rawUrlEncodeMatchZero'],
             $component
         );
     }
@@ -401,7 +401,7 @@ class Uri implements UriInterface, JsonSerializable
     {
         return preg_replace_callback(
             '/(?:[^' . self::CHAR_UNRESERVED . self::CHAR_SUB_DELIMITERS . '%:@\/]++|%(?![A-Fa-f0-9]{2}))/',
-            [$this, 'rawurlencodeMatchZero'],
+            [$this, 'rawUrlEncodeMatchZero'],
             $path
         );
     }
@@ -410,12 +410,12 @@ class Uri implements UriInterface, JsonSerializable
     {
         return preg_replace_callback(
             '/(?:[^' . self::CHAR_UNRESERVED . self::CHAR_SUB_DELIMITERS . '%:@\/\?]++|%(?![A-Fa-f0-9]{2}))/',
-            [$this, 'rawurlencodeMatchZero'],
+            [$this, 'rawUrlEncodeMatchZero'],
             $str
         );
     }
 
-    private function rawurlencodeMatchZero(array $match): string
+    private function rawUrlEncodeMatchZero(array $match): string
     {
         return rawurlencode($match[0]);
     }
@@ -427,13 +427,16 @@ class Uri implements UriInterface, JsonSerializable
             $this->host = self::HTTP_DEFAULT_HOST;
         }
 
-        if ($this->getAuthority() === '') {
-            if (str_starts_with($this->path, '//')) {
-                throw new Exception('The path of a URI without an authority must not start with two slashes "//"');
-            }
-            if ($this->scheme === '' && str_contains(explode('/', $this->path, 2)[0], ':')) {
-                throw new Exception('A relative URI must not have a path beginning with a segment containing a colon');
-            }
+        if ($this->getAuthority() !== '') {
+            return;
+        }
+
+        if (str_starts_with($this->path, '//')) {
+            throw new Exception('The path of a URI without an authority must not start with two slashes "//"');
+        }
+
+        if ($this->scheme === '' && str_contains(explode('/', $this->path, 2)[0], ':')) {
+            throw new Exception('A relative URI must not have a path beginning with a segment containing a colon');
         }
     }
 }
