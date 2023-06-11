@@ -166,7 +166,7 @@ class Uri implements UriInterface, JsonSerializable
         return $this->fragment;
     }
 
-    public function withScheme($scheme): UriInterface
+    public function withScheme(string $scheme): UriInterface
     {
         $scheme = $this->filterScheme($scheme);
 
@@ -183,7 +183,7 @@ class Uri implements UriInterface, JsonSerializable
         return $new;
     }
 
-    public function withUserInfo($user, $password = null): UriInterface
+    public function withUserInfo(string $user, ?string $password = null): UriInterface
     {
         $info = $this->filterUserInfoComponent($user);
         if ($password !== null) {
@@ -202,7 +202,7 @@ class Uri implements UriInterface, JsonSerializable
         return $new;
     }
 
-    public function withHost($host): UriInterface
+    public function withHost(string $host): UriInterface
     {
         $host = $this->filterHost($host);
 
@@ -218,7 +218,7 @@ class Uri implements UriInterface, JsonSerializable
         return $new;
     }
 
-    public function withPort($port): UriInterface
+    public function withPort(?int $port): UriInterface
     {
         $port = $this->filterPort((int)$port);
 
@@ -235,7 +235,7 @@ class Uri implements UriInterface, JsonSerializable
         return $new;
     }
 
-    public function withPath($path): UriInterface
+    public function withPath(string $path): UriInterface
     {
         $path = $this->filterPath($path);
 
@@ -251,7 +251,7 @@ class Uri implements UriInterface, JsonSerializable
         return $new;
     }
 
-    public function withQuery($query): UriInterface
+    public function withQuery(string $query): UriInterface
     {
         $query = $this->filterQueryAndFragment($query);
 
@@ -266,7 +266,7 @@ class Uri implements UriInterface, JsonSerializable
         return $new;
     }
 
-    public function withFragment($fragment): UriInterface
+    public function withFragment(string $fragment): UriInterface
     {
         $fragment = $this->filterQueryAndFragment($fragment);
 
