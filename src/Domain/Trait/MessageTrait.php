@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Camoo\Http\Curl\Domain\Trait;
 
 use BFunky\HttpParser\Entity\HttpField;
-use Psr\Http\Message\MessageInterface;
 use Psr\Http\Message\StreamInterface;
 
 trait MessageTrait
@@ -15,7 +14,7 @@ trait MessageTrait
         return $this->headerResponse->getHeaderEntity()->getProtocol();
     }
 
-    public function withProtocolVersion(string $version): MessageInterface
+    public function withProtocolVersion(string $version): self
     {
         $this->headerResponse->getHeaderEntity()->setProtocol($version);
 
@@ -46,7 +45,7 @@ trait MessageTrait
         return $this->headerResponse->getHeaderLine($name) ?? '';
     }
 
-    public function withHeader(string $name, $value): MessageInterface
+    public function withHeader(string $name, $value): self
     {
         if ($this->headerResponse->exists($name)) {
             $this->headerResponse->remove($name);
@@ -57,7 +56,7 @@ trait MessageTrait
         return $this;
     }
 
-    public function withAddedHeader(string $name, $value): MessageInterface
+    public function withAddedHeader(string $name, $value): self
     {
         $field = new HttpField($name, $value);
         $this->headerResponse->withHeader($field);
@@ -65,7 +64,7 @@ trait MessageTrait
         return $this;
     }
 
-    public function withoutHeader(string $name): MessageInterface
+    public function withoutHeader(string $name): self
     {
         if ($this->headerResponse->exists($name)) {
             $this->headerResponse->remove($name);
@@ -79,7 +78,7 @@ trait MessageTrait
         return $this->body;
     }
 
-    public function withBody(StreamInterface $body): MessageInterface
+    public function withBody(StreamInterface $body): self
     {
         if ($body === $this->body) {
             return $this;
