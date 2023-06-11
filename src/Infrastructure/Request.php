@@ -173,7 +173,9 @@ class Request implements RequestInterface
         $headers = $this->headers;
 
         if (isset($headers['type'])) {
-            $headers = array_merge($headers, $this->mapTypeHeader($headers['type']));
+            $newHeaders = $this->mapTypeHeader($headers['type']);
+            unset($headers['type']);
+            $headers = array_merge($headers, $newHeaders);
         }
 
         $isJson = false;
@@ -188,11 +190,10 @@ class Request implements RequestInterface
         }
 
         $url = (string)$this->uri;
-
         if (!empty($this->headers)) {
             $curlHeaders = array_map(
                 fn (string $val, mixed $key) => trim($key) . ': ' . trim($val),
-                $this->headers,
+                $headers,
                 array_keys($headers)
             );
             $this->curlQuery->setOption(CURLOPT_HTTPHEADER, $curlHeaders);
@@ -239,18 +240,19 @@ class Request implements RequestInterface
             $this->curlQuery->setOption(CURLOPT_POST, 1);
         }
 
-        if (in_array($method, [self::POST, self::PUT, self::PATCH], true)) {
-            $postData = $data;
+        if (!in_array($method, [self::POST, self::PUT, self::PATCH], true)) {
+            return;
+        }
+        $postData = $data;
 
-            if ($isJson && !is_string($data)) {
-                $postData = json_encode($data);
-            }
-            if ($this->body instanceof StreamInterface) {
-                $postData = $this->body->getContents();
-            }
-            if (!empty($data)) {
-                $this->curlQuery->setOption(CURLOPT_POSTFIELDS, $postData);
-            }
+        if ($isJson && !is_string($data)) {
+            $postData = json_encode($data);
+        }
+        if ($this->body instanceof StreamInterface) {
+            $postData = $this->body->getContents();
+        }
+        if (!empty($data)) {
+            $this->curlQuery->setOption(CURLOPT_POSTFIELDS, $postData);
         }
     }
 
