@@ -38,7 +38,7 @@ class Uri implements UriInterface, JsonSerializable
 
     private string $host = '';
 
-    private ?int $port;
+    private ?int $port = null;
 
     private string $path = '';
 
