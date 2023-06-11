@@ -110,6 +110,7 @@ class UriTest extends TestCase
         $this->assertSame('/path', $uri->getPath());
         $this->assertSame('query=value', $uri->getQuery());
         $this->assertSame('fragment', $uri->getFragment());
+        $this->assertSame('https://example.com/path?query=value#fragment', $uri->jsonSerialize());
     }
 
     public function testWithScheme(): void
@@ -120,5 +121,41 @@ class UriTest extends TestCase
         $this->assertNotSame($uri, $newUri);
         $this->assertSame('http', $uri->getScheme());
         $this->assertSame('https', $newUri->getScheme());
+    }
+
+    public function testWithQuery(): void
+    {
+        $uri = new Uri('http://example.com');
+        $newUri = $uri->withQuery('query=value');
+
+        $this->assertNotSame($uri, $newUri);
+        $this->assertSame('', $uri->getQuery());
+        $this->assertSame('query=value', $newUri->getQuery());
+    }
+
+    public function testWithFragment(): void
+    {
+        $uri = new Uri('http://example.com');
+        $newUri = $uri->withFragment('fragment');
+
+        $this->assertNotSame($uri, $newUri);
+        $this->assertSame('', $uri->getFragment());
+        $this->assertSame('fragment', $newUri->getFragment());
+    }
+
+    public function testWithSameQuery(): void
+    {
+        $uri = new Uri('http://example.com?query=value');
+        $newUri = $uri->withQuery('query=value');
+
+        $this->assertSame($uri, $newUri);
+    }
+
+    public function testWithSameFragment(): void
+    {
+        $uri = new Uri('http://example.com#fragment');
+        $newUri = $uri->withFragment('fragment');
+
+        $this->assertSame($uri, $newUri);
     }
 }
