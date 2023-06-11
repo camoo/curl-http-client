@@ -66,7 +66,7 @@ class RequestTest extends TestCase
         $this->assertSame('/new-target', $newRequest->getRequestTarget());
     }
 
-    public function testGetMethod()
+    public function testGetMethod(): void
     {
         $uri = new Uri('https://example.com');
         $headers = [];
@@ -81,7 +81,7 @@ class RequestTest extends TestCase
         $this->assertSame('GET', $request->getMethod());
     }
 
-    public function testWithMethod()
+    public function testWithMethod(): void
     {
         $uri = new Uri('https://example.com');
         $headers = [];
@@ -98,7 +98,7 @@ class RequestTest extends TestCase
         $this->assertSame('POST', $newRequest->getMethod());
     }
 
-    public function testGetUri()
+    public function testGetUri(): void
     {
         $uri = new Uri('https://example.com');
         $headers = [];
@@ -113,7 +113,7 @@ class RequestTest extends TestCase
         $this->assertSame($uri, $request->getUri());
     }
 
-    public function testWithUri()
+    public function testWithUri(): void
     {
         $newUri = new Uri('https://new-example.com');
         $newRequest = $this->request->withUri($newUri);
@@ -122,7 +122,7 @@ class RequestTest extends TestCase
         $this->assertSame($newUri, $newRequest->getUri());
     }
 
-    public function testGetHeaders()
+    public function testGetHeaders(): void
     {
         $uri = new Uri('https://example.com');
         $headers = ['Content-Type' => 'application/json'];
@@ -138,7 +138,7 @@ class RequestTest extends TestCase
         $this->assertSame($headers, $request->getHeaders());
     }
 
-    public function testGetHeader()
+    public function testGetHeader(): void
     {
         $uri = new Uri('https://example.com');
         $headers = ['Content-Type' => 'application/json'];
@@ -161,7 +161,7 @@ class RequestTest extends TestCase
         $this->assertSame(['Authorization' => ''], $request->getHeader('Authorization'));
     }
 
-    public function testWithHeader()
+    public function testWithHeader(): void
     {
         $uri = new Uri('https://example.com');
         $headers = ['Content-Type' => 'application/json'];
@@ -176,12 +176,14 @@ class RequestTest extends TestCase
         $newRequest = $request->withHeader('Authorization', 'Bearer token');
 
         $headerResponse->expects($this->once())->method('getHeaders')->willReturn($newHeader);
+        $headerResponse->expects($this->once())->method('exists')->with('Authorization')->willReturn(true);
 
         $this->assertSame($request, $newRequest);
         $this->assertSame($newHeader, $newRequest->getHeaders());
+        $this->assertTrue($newRequest->hasHeader('Authorization'));
     }
 
-    public function testWithAddedHeader()
+    public function testWithAddedHeader(): void
     {
         $uri = new Uri('https://example.com');
         $headers = ['Content-Type' => 'application/json'];
@@ -201,7 +203,7 @@ class RequestTest extends TestCase
         $this->assertSame($expectedHeaders, $newRequest->getHeaders());
     }
 
-    public function testWithoutHeader()
+    public function testWithoutHeader(): void
     {
         $uri = new Uri('https://example.com');
         $headers = ['Content-Type' => 'application/json', 'Authorization' => 'Bearer token'];
@@ -211,6 +213,7 @@ class RequestTest extends TestCase
         $headerResponse = $this->createMock(HeaderResponseInterface::class);
         $body = null;
         $curlQuery = $this->createMock(CurlQueryInterface::class);
+        $headerResponse->expects($this->once())->method('exists')->with('Content-Type')->willReturn(true);
 
         $request = new Request(new Configuration(), $uri, $headers, $data, $method, $headerResponse, $body, $curlQuery);
         $newRequest = $request->withoutHeader('Content-Type');
@@ -220,7 +223,7 @@ class RequestTest extends TestCase
         $this->assertSame($expectedHeaders, $newRequest->getHeaders());
     }
 
-    public function testGetBody()
+    public function testGetBody(): void
     {
         $uri = new Uri('https://example.com');
         $headers = [];
@@ -235,7 +238,7 @@ class RequestTest extends TestCase
         $this->assertSame($body, $request->getBody());
     }
 
-    public function testWithBody()
+    public function testWithBody(): void
     {
         $uri = new Uri('https://example.com');
         $headers = [];
@@ -253,7 +256,22 @@ class RequestTest extends TestCase
         $this->assertSame($newBody, $newRequest->getBody());
     }
 
-    public function testGetProtocolVersion()
+    public function testWithSameBody(): void
+    {
+        $uri = new Uri('https://example.com');
+        $headers = [];
+        $data = [];
+        $method = 'GET';
+        $headerResponse = $this->createMock(HeaderResponseInterface::class);
+        $body = $this->createMock(StreamInterface::class);
+        $curlQuery = $this->createMock(CurlQueryInterface::class);
+
+        $request = new Request(new Configuration(), $uri, $headers, $data, $method, $headerResponse, $body, $curlQuery);
+        $newRequest = $request->withBody($body);
+        $this->assertSame($request, $newRequest);
+    }
+
+    public function testGetProtocolVersion(): void
     {
         $uri = new Uri('https://example.com');
         $headers = [];
@@ -269,7 +287,7 @@ class RequestTest extends TestCase
         $this->assertSame('1.1', $request->getProtocolVersion());
     }
 
-    public function testWithProtocolVersion()
+    public function testWithProtocolVersion(): void
     {
         $uri = new Uri('https://example.com');
         $headers = [];
