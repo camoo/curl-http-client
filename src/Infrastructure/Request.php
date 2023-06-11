@@ -173,7 +173,9 @@ class Request implements RequestInterface
         $headers = $this->headers;
 
         if (isset($headers['type'])) {
-            $headers = array_merge($headers, $this->mapTypeHeader($headers['type']));
+            $newHeaders = $this->mapTypeHeader($headers['type']);
+            unset($headers['type']);
+            $headers = array_merge($headers, $newHeaders);
         }
 
         $isJson = false;
@@ -188,11 +190,10 @@ class Request implements RequestInterface
         }
 
         $url = (string)$this->uri;
-
         if (!empty($this->headers)) {
             $curlHeaders = array_map(
                 fn (string $val, mixed $key) => trim($key) . ': ' . trim($val),
-                $this->headers,
+                $headers,
                 array_keys($headers)
             );
             $this->curlQuery->setOption(CURLOPT_HTTPHEADER, $curlHeaders);

@@ -6,10 +6,14 @@ namespace Camoo\Http\Curl\Test\TestCase\Infrastructure;
 
 use Camoo\Http\Curl\Application\Query\CurlQueryInterface;
 use Camoo\Http\Curl\Domain\Client\ClientInterface;
+use Camoo\Http\Curl\Domain\Entity\Configuration;
+use Camoo\Http\Curl\Domain\Entity\Uri;
+use Camoo\Http\Curl\Domain\Header\HeaderResponseInterface;
 use Camoo\Http\Curl\Domain\Request\RequestInterface;
 use Camoo\Http\Curl\Domain\Response\ResponseInterface;
 use Camoo\Http\Curl\Infrastructure\Client;
 use Camoo\Http\Curl\Infrastructure\Exception\ClientException;
+use Camoo\Http\Curl\Infrastructure\Request;
 use Camoo\Http\Curl\Test\Fixture\CurlQueryMock;
 use PHPUnit\Framework\TestCase;
 
@@ -77,17 +81,39 @@ class ClientTest extends TestCase
     public function testCanSendRequest(): void
     {
         $fixture = $this->curlQueryMock->getFixture();
+        $uri = new Uri('https://example.com');
+        $auth = ['type' => 'Basic', 'username' => 'username', 'password' => 'password'];
+        $headers = ['type' => 'json', 'Authorization' => 'My token', 'auth' => $auth];
+        $data = [];
+        $method = 'GET';
+        $headerResponse = $this->createMock(HeaderResponseInterface::class);
+        $body = null;
         $this->curlQuery->method('execute')->willReturn($fixture->getResponse());
         $this->curlQuery->method('getInfo')->willReturn($fixture->getInfo());
         $this->curlQuery->method('getErrorMessage')->willReturn('');
         $this->curlQuery->method('getErrorNumber')->willReturn(0);
         $this->curlQuery->method('close');
-        $this->request->expects($this->once())->method('getRequestHandle')->willReturn($this->curlQuery);
-        $response = $this->client->sendRequest($this->request);
+
+        $request = new Request(new Configuration(), $uri, $headers, $data, $method, $headerResponse, $body, $this->curlQuery);
+        $response = $this->client->sendRequest($request);
         $this->assertInstanceOf(ResponseInterface::class, $response);
         $this->assertSame(200, $response->getStatusCode());
         $this->assertSame('HTTP/2', $response->getProtocolVersion());
         $this->assertSame('OK', $response->getReasonPhrase());
         $this->assertSame('camooCloud', $response->getHeaderLine('server'));
+    }
+
+    public function testWithWrongHeaderTypeThrowsException(): void
+    {
+        $this->expectException(ClientException::class);
+        $uri = new Uri('https://example.com');
+        $headers = ['type' => 'error'];
+        $data = [];
+        $method = 'GET';
+        $headerResponse = $this->createMock(HeaderResponseInterface::class);
+        $body = null;
+
+        $request = new Request(new Configuration(), $uri, $headers, $data, $method, $headerResponse, $body, $this->curlQuery);
+        $this->client->sendRequest($request);
     }
 }
