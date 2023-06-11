@@ -66,11 +66,24 @@ class RequestTest extends TestCase
         $this->assertSame('/new-target', $newRequest->getRequestTarget());
     }
 
+    public function testRequestTargetWithQuery(): void
+    {
+        $uri = new Uri('https://example.com?page=1');
+        $headers = [];
+        $data = [];
+        $method = 'GET';
+
+        $request = new Request(new Configuration(), $uri, $headers, $data, $method);
+        $newRequest = $request->withMethod('POST');
+
+        $this->assertSame('/?page=1', $newRequest->getRequestTarget());
+    }
+
     public function testGetMethod(): void
     {
         $uri = new Uri('https://example.com');
         $headers = [];
-        $data = [];
+        $data = ['foo' => 'bar'];
         $method = 'GET';
         $headerResponse = $this->createMock(HeaderResponseInterface::class);
         $body = null;
