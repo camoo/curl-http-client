@@ -21,7 +21,7 @@ class ClientTest extends TestCase
 
     private ?RequestInterface $request;
 
-    private string $url = 'http://localhost';
+    private string $url = 'https://localhost';
 
     private ?CurlQueryMock $curlQueryMock;
 

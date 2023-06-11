@@ -101,7 +101,7 @@ class Request implements RequestInterface
 
     public function withUri(UriInterface $uri, bool $preserveHost = false): self
     {
-        if ($uri === $this->uri) {
+        if ((string)$uri === (string)$this->uri) {
             return $this;
         }
 

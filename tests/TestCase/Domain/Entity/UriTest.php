@@ -84,6 +84,13 @@ class UriTest extends TestCase
         $this->assertSame('https://newhost.com', $newUri->__toString());
     }
 
+    public function testWithSameHost(): void
+    {
+        $uri = new Uri('https://example.com');
+        $newUri = $uri->withHost('example.com');
+        $this->assertSame($uri, $newUri);
+    }
+
     public function testWithPort(): void
     {
         $uri = new Uri('https://example.com');
@@ -91,11 +98,25 @@ class UriTest extends TestCase
         $this->assertSame('https://example.com:8080', $newUri->__toString());
     }
 
+    public function testWithSamePort(): void
+    {
+        $uri = new Uri('https://example.com:8080');
+        $newUri = $uri->withPort(8080);
+        $this->assertSame($uri, $newUri);
+    }
+
     public function testWithPath(): void
     {
         $uri = new Uri('https://example.com');
         $newUri = $uri->withPath('/newpath');
         $this->assertSame('https://example.com/newpath', $newUri->__toString());
+    }
+
+    public function testWithSamePath(): void
+    {
+        $uri = new Uri('https://example.com/newpath');
+        $newUri = $uri->withPath('/newpath');
+        $this->assertSame($uri, $newUri);
     }
 
     public function testCanHandleConstructValidUri(): void
@@ -156,6 +177,21 @@ class UriTest extends TestCase
         $uri = new Uri('http://example.com#fragment');
         $newUri = $uri->withFragment('fragment');
 
+        $this->assertSame($uri, $newUri);
+    }
+
+    public function testWithSameScheme(): void
+    {
+        $uri = new Uri('http://example.com#scheme');
+        $newUri = $uri->withScheme('http');
+
+        $this->assertSame($uri, $newUri);
+    }
+
+    public function testWithSameUserInfo(): void
+    {
+        $uri = new Uri('https://user:pass@example.com');
+        $newUri = $uri->withUserInfo('user', 'pass');
         $this->assertSame($uri, $newUri);
     }
 }

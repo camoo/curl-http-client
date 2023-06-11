@@ -386,9 +386,15 @@ class Uri implements UriInterface, JsonSerializable
 
     private function removeDefaultPort(): void
     {
-        if ($this->port !== null && self::isDefaultPort($this)) {
-            $this->port = null;
+        if ($this->port === null) {
+            return;
         }
+
+        if (!self::isDefaultPort($this)) {
+            return;
+        }
+
+        $this->port = null;
     }
 
     private function filterPath(string $path): string

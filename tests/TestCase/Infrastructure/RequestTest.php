@@ -81,7 +81,7 @@ class RequestTest extends TestCase
 
     public function testGetMethod(): void
     {
-        $uri = new Uri('https://example.com');
+        $uri = 'https://example.com';
         $headers = [];
         $data = ['foo' => 'bar'];
         $method = 'GET';
@@ -133,6 +133,15 @@ class RequestTest extends TestCase
 
         $this->assertNotSame($this->request, $newRequest);
         $this->assertSame($newUri, $newRequest->getUri());
+    }
+
+    public function testWithSameUri(): void
+    {
+        $newUri = new Uri('http://localhost');
+        $newRequest = $this->request->withUri($newUri);
+
+        $this->assertSame($this->request, $newRequest);
+        $this->assertSame((string)$newUri, (string)$newRequest->getUri());
     }
 
     public function testGetHeaders(): void
