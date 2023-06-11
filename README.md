@@ -2,6 +2,15 @@
 Simple Curl Http Client build with the clean code architecture approach.
 PSR-7 standard
 
+<p align="center">
+    <a href="https://github.com/camoo/curl-http-client" target="_blank">
+        <img alt="Build Status" src="https://github.com/camoo/curl-http-client/actions/workflows/unittest.yml/badge.svg">
+    </a>
+	<a href="https://codecov.io/gh/camoo/curl-http-client">
+  		<img alt="camoo-badge" src="https://codecov.io/gh/camoo/curl-http-client/branch/main/graph/badge.svg" />
+	</a>
+</p>
+
 ## Usage
 ### without dependency injection
 ```php
