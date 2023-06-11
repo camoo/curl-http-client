@@ -240,18 +240,19 @@ class Request implements RequestInterface
             $this->curlQuery->setOption(CURLOPT_POST, 1);
         }
 
-        if (in_array($method, [self::POST, self::PUT, self::PATCH], true)) {
-            $postData = $data;
+        if (!in_array($method, [self::POST, self::PUT, self::PATCH], true)) {
+            return;
+        }
+        $postData = $data;
 
-            if ($isJson && !is_string($data)) {
-                $postData = json_encode($data);
-            }
-            if ($this->body instanceof StreamInterface) {
-                $postData = $this->body->getContents();
-            }
-            if (!empty($data)) {
-                $this->curlQuery->setOption(CURLOPT_POSTFIELDS, $postData);
-            }
+        if ($isJson && !is_string($data)) {
+            $postData = json_encode($data);
+        }
+        if ($this->body instanceof StreamInterface) {
+            $postData = $this->body->getContents();
+        }
+        if (!empty($data)) {
+            $this->curlQuery->setOption(CURLOPT_POSTFIELDS, $postData);
         }
     }
 

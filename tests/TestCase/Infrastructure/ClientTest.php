@@ -25,7 +25,7 @@ class ClientTest extends TestCase
 
     private ?RequestInterface $request;
 
-    private string $url = 'https://localhost';
+    private string $url = 'http://localhost';
 
     private ?CurlQueryMock $curlQueryMock;
 
@@ -106,7 +106,7 @@ class ClientTest extends TestCase
     public function testWithWrongHeaderTypeThrowsException(): void
     {
         $this->expectException(ClientException::class);
-        $uri = new Uri('https://example.com');
+        $uri = new Uri('http://example.com');
         $headers = ['type' => 'error'];
         $data = [];
         $method = 'GET';
@@ -115,5 +115,51 @@ class ClientTest extends TestCase
 
         $request = new Request(new Configuration(), $uri, $headers, $data, $method, $headerResponse, $body, $this->curlQuery);
         $this->client->sendRequest($request);
+    }
+
+    public function testWithFullValidHeaderType(): void
+    {
+        $fixture = $this->curlQueryMock->getFixture();
+        $uri = new Uri('https://example.com');
+        $headers = ['type' => 'application/xml'];
+        $data = [];
+        $method = 'GET';
+        $headerResponse = $this->createMock(HeaderResponseInterface::class);
+        $body = null;
+        $this->curlQuery->method('execute')->willReturn($fixture->getResponse());
+        $this->curlQuery->method('getInfo')->willReturn($fixture->getInfo());
+        $this->curlQuery->method('getErrorMessage')->willReturn('');
+        $this->curlQuery->method('getErrorNumber')->willReturn(0);
+        $this->curlQuery->method('close');
+
+        $request = new Request(new Configuration(), $uri, $headers, $data, $method, $headerResponse, $body, $this->curlQuery);
+        $response = $this->client->sendRequest($request);
+        $this->assertInstanceOf(ResponseInterface::class, $response);
+    }
+
+    public function testCanDebug(): void
+    {
+        $fixture = $this->curlQueryMock->getFixture();
+        $uri = new Uri('https://example.com');
+        $method = 'PATCH';
+        $headerResponse = $this->createMock(HeaderResponseInterface::class);
+        $body = null;
+        $this->curlQuery->method('execute')->willReturn($fixture->getResponse());
+        $this->curlQuery->method('getInfo')->willReturn($fixture->getInfo());
+        $this->curlQuery->method('getErrorMessage')->willReturn('');
+        $this->curlQuery->method('getErrorNumber')->willReturn(0);
+        $this->curlQuery->method('close');
+        $request = new Request(
+            new Configuration(10, '', '', 'https://referer.camoo', 'camoo', true),
+            $uri,
+            ['type' => 'application/xml'],
+            ['age' => 10],
+            $method,
+            $headerResponse,
+            $body,
+            $this->curlQuery
+        );
+        $response = $this->client->sendRequest($request);
+        $this->assertInstanceOf(ResponseInterface::class, $response);
     }
 }
