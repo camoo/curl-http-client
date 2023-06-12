@@ -36,7 +36,7 @@ trait MessageTrait
         $header = $this->headerResponse->getHeader($name);
 
         return [
-            $header->getName() => $header->getValue(),
+            $header->getName() => trim($header->getValue()),
         ];
     }
 

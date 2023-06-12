@@ -36,7 +36,7 @@ class HeaderResponse implements HeaderResponseInterface
     public function getHeaders(): array
     {
         return array_map(
-            fn (HttpField $field) => [$field->getName() => $field->getValue()],
+            fn (HttpField $field) => [$field->getName() => trim($field->getValue())],
             $this->headerCollection->getIterator()->getArrayCopy()
         );
     }
@@ -60,7 +60,7 @@ class HeaderResponse implements HeaderResponseInterface
             return null;
         }
 
-        return $line;
+        return trim($line);
     }
 
     /** @throws HttpFieldNotFoundOnCollection */
