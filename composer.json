@@ -7,7 +7,7 @@
         "ext-curl": "*",
         "ext-json": "*",
         "psr/http-message": "^1.1",
-        "bfunky/http-parser": "^2.2"
+        "camoo/http-header-parser": "^1.0"
     },
     "require-dev": {
         "phpunit/phpunit": "^9"

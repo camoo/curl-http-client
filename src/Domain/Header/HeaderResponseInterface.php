@@ -35,10 +35,8 @@ interface HeaderResponseInterface
     /** @throws HttpFieldNotFoundOnCollection */
     public function remove(string $name): void;
 
-    /**
-     * @throws Throwable
-     */
+    /** @throws Throwable */
     public function getHeaders(): array;
 
-    public function getHeader(string $name): ?HttpField;
+    public function getHeader(string $name): HttpField|array|null;
 }
