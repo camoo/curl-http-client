@@ -35,13 +35,19 @@ class HeaderResponse implements HeaderResponseInterface
 
     public function getHeaders(): array
     {
-        return array_map(
-            fn (HttpField $field) => [$field->getName() => $field->getValue()],
-            $this->headerCollection->getIterator()->getArrayCopy()
-        );
+        return array_map(function (HttpField|array $field): array {
+            if (is_array($field)) {
+                return array_map(
+                    fn (HttpField $line) => [$line->getName() => trim($line->getValue())],
+                    $field
+                );
+            }
+
+            return [$field->getName() => trim($field->getValue())];
+        }, $this->headerCollection->getIterator()->getArrayCopy());
     }
 
-    public function getHeader(string $name): ?HttpField
+    public function getHeader(string $name): HttpField|array|null
     {
         try {
             $header = $this->headerCollection->get($name);
@@ -60,7 +66,7 @@ class HeaderResponse implements HeaderResponseInterface
             return null;
         }
 
-        return $line;
+        return trim($line);
     }
 
     /** @throws HttpFieldNotFoundOnCollection */

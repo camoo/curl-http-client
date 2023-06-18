@@ -42,5 +42,6 @@ class HeaderResponseTest extends TestCase
         $this->assertSame('HTTP/2', $headerResponse->getProtocol());
         $this->assertSame('OK', $headerResponse->getMessage());
         $this->assertInstanceOf(HttpHeaderInterface::class, $headerResponse->getHeaderEntity());
+        $this->assertCount(22, $headerResponse->getHeaders());
     }
 }

@@ -19,7 +19,8 @@ date: ' . gmdate(DATE_RFC822) . ' GMT
 content-type: application/json; charset=UTF-8
 vary: Accept-Encoding
 content-length: 1
-set-cookie: localhost=0bcpoc8vq6gu4opv4o573940f; expires=Mon, ' . gmdate('d-M-Y H:i:s') . ' GMT; Max-Age=900; path=/; domain=localhost
+set-cookie: localhost=0bcpoc8vq6gu4opv4o573940f; expires=Mon, ' . gmdate('d-M-Y') . ' GMT; Max-Age=900; path=/; domain=localhost
+set-cookie: PHPSESSID=6sf8fa8rlm8c44avk33hhcegt0; path=/; HttpOnly
 expires: Thu, 19 Nov 1981 08:52:00 GMT
 cache-control: no-store, no-cache, must-revalidate
 pragma: no-cache

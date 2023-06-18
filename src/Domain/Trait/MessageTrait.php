@@ -34,9 +34,17 @@ trait MessageTrait
     public function getHeader(string $name): array
     {
         $header = $this->headerResponse->getHeader($name);
+        if (is_array($header)) {
+            $values = array_map(
+                fn (HttpField $line): string => trim($line->getValue()),
+                $header
+            );
+
+            return [$name => $values];
+        }
 
         return [
-            $header->getName() => $header->getValue(),
+            $header->getName() => trim($header->getValue()),
         ];
     }
 
