@@ -101,6 +101,10 @@ class ClientTest extends TestCase
         $this->assertSame('HTTP/2', $response->getProtocolVersion());
         $this->assertSame('OK', $response->getReasonPhrase());
         $this->assertSame('camooCloud', $response->getHeaderLine('server'));
+        $this->assertEquals(['set-cookie' => [
+            'localhost=0bcpoc8vq6gu4opv4o573940f; expires=Mon, ' . gmdate('d-M-Y') . ' GMT; Max-Age=900; path=/; domain=localhost',
+            'PHPSESSID=6sf8fa8rlm8c44avk33hhcegt0; path=/; HttpOnly',
+        ]], $response->getHeader('set-cookie'));
     }
 
     public function testWithWrongHeaderTypeThrowsException(): void

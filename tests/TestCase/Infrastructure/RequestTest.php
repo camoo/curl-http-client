@@ -195,10 +195,11 @@ class RequestTest extends TestCase
         $curlQuery = $this->createMock(CurlQueryInterface::class);
 
         $request = new Request(new Configuration(), $uri, $headers, $data, $method, $headerResponse, $body, $curlQuery);
+        $headerResponse->expects($this->exactly(2))->method('exists')->with('Authorization')->willReturn(true);
+
         $newRequest = $request->withHeader('Authorization', 'Bearer token');
 
         $headerResponse->expects($this->once())->method('getHeaders')->willReturn($newHeader);
-        $headerResponse->expects($this->once())->method('exists')->with('Authorization')->willReturn(true);
 
         $this->assertSame($request, $newRequest);
         $this->assertSame($newHeader, $newRequest->getHeaders());
