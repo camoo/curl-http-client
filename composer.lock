@@ -12,12 +12,12 @@
             "source": {
                 "type": "git",
                 "url": "https://github.com/camoo/http-header-parser.git",
-                "reference": "80e9502e3c077ef4eda015df7f638260d23bda90"
+                "reference": "f78c480515c522268fb7fb9fe3e392861a52e1c9"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/camoo/http-header-parser/zipball/80e9502e3c077ef4eda015df7f638260d23bda90",
-                "reference": "80e9502e3c077ef4eda015df7f638260d23bda90",
+                "url": "https://api.github.com/repos/camoo/http-header-parser/zipball/f78c480515c522268fb7fb9fe3e392861a52e1c9",
+                "reference": "f78c480515c522268fb7fb9fe3e392861a52e1c9",
                 "shasum": ""
             },
             "require": {
@@ -60,7 +60,7 @@
             "support": {
                 "source": "https://github.com/camoo/http-header-parser/tree/1.0.0"
             },
-            "time": "2023-06-18T17:15:39+00:00"
+            "time": "2023-06-18T20:00:46+00:00"
         },
         {
             "name": "psr/http-message",
