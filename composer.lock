@@ -4,60 +4,8 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "b6e7417ae95b04c7e5248bddaca4b94c",
+    "content-hash": "d9042eef71af49ed5e23c39ee05f8c41",
     "packages": [
-        {
-            "name": "bfunky/http-parser",
-            "version": "2.2.1",
-            "source": {
-                "type": "git",
-                "url": "https://github.com/bfunky/http-parser.git",
-                "reference": "ba4b3a097cac854931d4e0ee3f0135d774ece08a"
-            },
-            "dist": {
-                "type": "zip",
-                "url": "https://api.github.com/repos/bfunky/http-parser/zipball/ba4b3a097cac854931d4e0ee3f0135d774ece08a",
-                "reference": "ba4b3a097cac854931d4e0ee3f0135d774ece08a",
-                "shasum": ""
-            },
-            "require": {
-                "php": ">=7.2"
-            },
-            "require-dev": {
-                "phpunit/phpunit": "6.*"
-            },
-            "type": "library",
-            "autoload": {
-                "psr-4": {
-                    "BFunky\\HttpParser\\": "src"
-                }
-            },
-            "notification-url": "https://packagist.org/downloads/",
-            "license": [
-                "MIT"
-            ],
-            "authors": [
-                {
-                    "name": "Jairo Rodríguez",
-                    "email": "jairo@bfunky.net",
-                    "homepage": "http://www.bfunky.net"
-                }
-            ],
-            "description": "A library to parse HTTP headers and HTTP header fields",
-            "keywords": [
-                "http",
-                "http fields",
-                "http parser",
-                "http request",
-                "http response",
-                "parser"
-            ],
-            "support": {
-                "issues": "https://github.com/bfunky/http-parser/issues",
-                "source": "https://github.com/bfunky/http-parser/tree/master"
-            },
-            "time": "2018-01-18T21:30:02+00:00"
-        },
         {
             "name": "camoo/http-header-parser",
             "version": "1.0.0",
