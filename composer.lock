@@ -8,20 +8,20 @@
     "packages": [
         {
             "name": "camoo/http-header-parser",
-            "version": "1.0.0",
+            "version": "1.0.1",
             "source": {
                 "type": "git",
                 "url": "https://github.com/camoo/http-header-parser.git",
-                "reference": "f78c480515c522268fb7fb9fe3e392861a52e1c9"
+                "reference": "350ea05fa68c67f321d692f33d49de1434605528"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/camoo/http-header-parser/zipball/f78c480515c522268fb7fb9fe3e392861a52e1c9",
-                "reference": "f78c480515c522268fb7fb9fe3e392861a52e1c9",
+                "url": "https://api.github.com/repos/camoo/http-header-parser/zipball/350ea05fa68c67f321d692f33d49de1434605528",
+                "reference": "350ea05fa68c67f321d692f33d49de1434605528",
                 "shasum": ""
             },
             "require": {
-                "php": ">8.0"
+                "php": ">=8.0"
             },
             "require-dev": {
                 "phpunit/phpunit": "^9"
@@ -58,9 +58,9 @@
                 "parser"
             ],
             "support": {
-                "source": "https://github.com/camoo/http-header-parser/tree/1.0.0"
+                "source": "https://github.com/camoo/http-header-parser/tree/1.0.1"
             },
-            "time": "2023-06-18T20:00:46+00:00"
+            "time": "2023-06-19T05:54:46+00:00"
         },
         {
             "name": "psr/http-message",
