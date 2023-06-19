@@ -17,6 +17,6 @@ final class Headers extends HttpFieldCollection implements IteratorAggregate
 
     public function getIterator(): ArrayIterator
     {
-        return new ArrayIterator($this->httpFields);
+        return new ArrayIterator($this->getHttpFields());
     }
 }
