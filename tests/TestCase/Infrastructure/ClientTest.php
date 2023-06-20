@@ -78,6 +78,21 @@ class ClientTest extends TestCase
         $this->client->sendRequest($this->request);
     }
 
+    public function testSendRequestThrowsExceptionOnEmptyResponse(): void
+    {
+        $this->expectException(ClientException::class);
+        $this->expectExceptionMessage('Could not resolve host: www.tld.com');
+
+        $fixture = $this->curlQueryMock->getFixture(404);
+        $this->curlQuery->method('execute')->willReturn(false);
+        $this->curlQuery->method('getInfo')->willReturn($fixture->getInfo());
+        $this->curlQuery->method('getErrorMessage')->willReturn('Could not resolve host: www.tld.com');
+        $this->curlQuery->method('getErrorNumber')->willReturn(1);
+        $this->curlQuery->method('close');
+        $this->request->expects($this->once())->method('getRequestHandle')->willReturn($this->curlQuery);
+        $this->client->sendRequest($this->request);
+    }
+
     public function testCanSendRequest(): void
     {
         $fixture = $this->curlQueryMock->getFixture();

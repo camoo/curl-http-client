@@ -72,6 +72,10 @@ final class Client implements ClientInterface
         $error = $handle->getErrorMessage();
         $handle->close();
 
+        if (empty($responses)) {
+            throw new ClientException($error);
+        }
+
         $headers = substr($responses, 0, $status['header_size']);
         $headerResponse = new HeaderResponse($headers);
         $body = substr($responses, $status['header_size']);
