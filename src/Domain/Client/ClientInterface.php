@@ -6,6 +6,7 @@ namespace Camoo\Http\Curl\Domain\Client;
 
 use Camoo\Http\Curl\Domain\Request\RequestInterface;
 use Camoo\Http\Curl\Domain\Response\ResponseInterface;
+use Camoo\Http\Curl\Infrastructure\Exception\ClientException;
 
 interface ClientInterface
 {
@@ -21,5 +22,8 @@ interface ClientInterface
 
     public function delete(string $url, array $headers): ResponseInterface;
 
+    /**
+     * @throws ClientException
+     */
     public function sendRequest(RequestInterface $request): ResponseInterface;
 }
