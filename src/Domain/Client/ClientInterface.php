@@ -22,8 +22,6 @@ interface ClientInterface
 
     public function delete(string $url, array $headers): ResponseInterface;
 
-    /**
-     * @throws ClientException
-     */
+    /** @throws ClientException */
     public function sendRequest(RequestInterface $request): ResponseInterface;
 }
