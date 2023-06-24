@@ -8,6 +8,7 @@ use Camoo\Http\Curl\Domain\Exception\Exception;
 use Camoo\Http\Curl\Domain\Exception\InvalidArgumentException;
 use JsonSerializable;
 use Psr\Http\Message\UriInterface;
+
 use function strtr;
 
 class Uri implements UriInterface, JsonSerializable
