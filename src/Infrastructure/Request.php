@@ -59,7 +59,7 @@ class Request implements RequestInterface
         if ($target === '') {
             $target = '/';
         }
-        if ($this->uri->getQuery() != '') {
+        if ($this->uri->getQuery() !== '') {
             $target .= '?' . $this->uri->getQuery();
         }
 
@@ -251,7 +251,7 @@ class Request implements RequestInterface
         if ($this->body instanceof StreamInterface) {
             $postData = $this->body->getContents();
         }
-        if (!empty($data)) {
+        if (!empty($data) || !empty($postData)) {
             $this->curlQuery->setOption(CURLOPT_POSTFIELDS, $postData);
         }
     }
