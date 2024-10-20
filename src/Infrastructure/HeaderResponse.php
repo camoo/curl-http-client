@@ -35,10 +35,10 @@ class HeaderResponse implements HeaderResponseInterface
 
     public function getHeaders(): array
     {
-        return array_map(function (HttpField|array $field): array {
+        return array_map(static function (HttpField|array $field): array {
             if (is_array($field)) {
                 return array_map(
-                    fn (HttpField $line) => [$line->getName() => trim($line->getValue())],
+                    static fn (HttpField $line) => [$line->getName() => trim($line->getValue())],
                     $field
                 );
             }
