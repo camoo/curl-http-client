@@ -22,7 +22,7 @@ final class CurlRequestQuery implements CurlQueryInterface
 
     public function close(): void
     {
-        curl_close($this->handle);
+        $this->handle = null;
     }
 
     public function getInfo(?int $option = null): mixed
