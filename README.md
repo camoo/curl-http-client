@@ -80,3 +80,33 @@ final class TemplateRepository implements TemplateRepositoryInterface
 }
 
 ```
+
+### Concurrent Requests with MultiCurl and MultiCurlPromise
+Execute multiple HTTP requests in parallel using `MultiCurl` and `MultiCurlPromise`.
+
+```php
+use Camoo\Http\Curl\Infrastructure\MultiCurl;
+
+$multiCurl = new MultiCurl();
+
+// Add parallel requests
+$promise1 = $multiCurl->get('https://api.example.com/v1/users');
+$promise2 = $multiCurl->post('https://api.example.com/v1/data', ['name' => 'foo']);
+
+// Attach promise callbacks if desired
+$promise1->then(function ($response) {
+    echo "Users status: " . $response->getStatusCode();
+});
+
+// Execute all pending requests concurrently
+$responses = $multiCurl->send();
+
+// Or wait directly on a specific promise
+$response2 = $promise2->wait();
+```
+
+### Running with Docker Compose
+```bash
+docker compose run --rm app composer install
+docker compose run --rm app vendor/bin/phpunit
+```

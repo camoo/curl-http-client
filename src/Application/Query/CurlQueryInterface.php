@@ -17,4 +17,8 @@ interface CurlQueryInterface
     public function getErrorNumber(): int;
 
     public function getErrorMessage(): string;
+
+    public function getContent(): bool|string;
+
+    public function getRawHandle(): mixed;
 }
