@@ -21,8 +21,15 @@ final class CurlMultiRequestQuery implements MultiCurlQueryInterface
     public function addHandle(CurlQueryInterface $query): int
     {
         $rawHandle = $query->getRawHandle();
-        if ($rawHandle === null || $rawHandle === false || $this->multiHandle === null) {
+        if ($rawHandle === null || $rawHandle === false) {
             return CURLM_BAD_HANDLE;
+        }
+
+        if ($this->multiHandle === null) {
+            $this->multiHandle = curl_multi_init();
+            if (false === $this->multiHandle) {
+                return CURLM_BAD_HANDLE;
+            }
         }
 
         return curl_multi_add_handle($this->multiHandle, $rawHandle);

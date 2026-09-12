@@ -149,6 +149,8 @@ class MultiCurlTest extends TestCase
         $promise = $multiCurl->add($req);
 
         $this->multiCurlQuery->method('exec')->willReturn(0);
+        $this->multiCurlQuery->expects($this->once())->method('removeHandle');
+        $this->curlQuery1->expects($this->once())->method('close');
 
         $responses = $multiCurl->send();
 
