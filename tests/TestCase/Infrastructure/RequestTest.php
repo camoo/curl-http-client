@@ -94,6 +94,40 @@ class RequestTest extends TestCase
         $this->assertSame('GET', $request->getMethod());
     }
 
+    public function testHeadRequestDisablesResponseBody(): void
+    {
+        $curlQuery = $this->createMock(CurlQueryInterface::class);
+        $curlQuery->method('setOption')->willReturnCallback(
+            function (int $option, mixed $value): bool {
+                if ($option === CURLOPT_NOBODY) {
+                    $this->assertTrue($value);
+                }
+
+                return true;
+            }
+        );
+
+        $request = new Request(new Configuration(), 'http://localhost', [], [], 'HEAD', null, null, $curlQuery);
+        $request->getRequestHandle();
+    }
+
+    public function testNonHeadRequestAllowsResponseBody(): void
+    {
+        $curlQuery = $this->createMock(CurlQueryInterface::class);
+        $curlQuery->method('setOption')->willReturnCallback(
+            function (int $option, mixed $value): bool {
+                if ($option === CURLOPT_NOBODY) {
+                    $this->assertFalse($value);
+                }
+
+                return true;
+            }
+        );
+
+        $request = new Request(new Configuration(), 'http://localhost', [], [], 'GET', null, null, $curlQuery);
+        $request->getRequestHandle();
+    }
+
     public function testWithMethod(): void
     {
         $uri = new Uri('https://example.com');

@@ -28,4 +28,16 @@ class CurlRequestQueryTest extends TestCase
         $this->assertStringContainsString('No URL set', $handle->getErrorMessage());
         $this->assertNull($handle->close());
     }
+
+    public function testClosedHandleIsSafeToUse(): void
+    {
+        $handle = new CurlRequestQuery(curl_init());
+        $handle->close();
+
+        $this->assertFalse($handle->execute());
+        $this->assertFalse($handle->getInfo());
+        $this->assertFalse($handle->setOption(CURLOPT_URL, 'http://localhost'));
+        $this->assertSame(0, $handle->getErrorNumber());
+        $this->assertSame('', $handle->getErrorMessage());
+    }
 }

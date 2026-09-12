@@ -29,6 +29,8 @@ class Request implements RequestInterface
 
     private const PATCH = 'PATCH';
 
+    private const HEAD = 'HEAD';
+
     private ?string $requestTarget = null;
 
     public function __construct(
@@ -206,7 +208,7 @@ class Request implements RequestInterface
         $this->curlQuery->setOption(CURLOPT_USERAGENT, $userAgent);
         $this->curlQuery->setOption(CURLOPT_HEADER, true);
         $this->applyHttpAuth($auth);
-        $this->curlQuery->setOption(CURLOPT_NOBODY, 0);
+        $this->curlQuery->setOption(CURLOPT_NOBODY, $this->method === self::HEAD);
         $this->curlQuery->setOption(CURLOPT_URL, $url);
         $this->addRequestData($this->method, $requestData, $isJson);
         $this->parseOptions();

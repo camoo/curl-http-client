@@ -163,8 +163,6 @@ final class MultiCurl implements MultiCurlInterface
                 $status = $query->getInfo();
                 $errorNumber = $query->getErrorNumber();
                 $error = $query->getErrorMessage();
-                $this->multiCurlQuery->removeHandle($query);
-
                 if ($multiStatus !== CURLM_OK) {
                     continue;
                 }
@@ -186,7 +184,11 @@ final class MultiCurl implements MultiCurlInterface
             } catch (\Throwable $e) {
                 $promise->reject($e);
             } finally {
-                $query->close();
+                try {
+                    $this->multiCurlQuery->removeHandle($query);
+                } finally {
+                    $query->close();
+                }
             }
         }
 

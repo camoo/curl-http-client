@@ -17,6 +17,10 @@ final class CurlRequestQuery implements CurlQueryInterface
 
     public function execute(): bool|string
     {
+        if ($this->handle === null || $this->handle === false) {
+            return false;
+        }
+
         return curl_exec($this->handle);
     }
 
@@ -54,21 +58,37 @@ final class CurlRequestQuery implements CurlQueryInterface
 
     public function getInfo(?int $option = null): mixed
     {
+        if ($this->handle === null || $this->handle === false) {
+            return false;
+        }
+
         return curl_getinfo($this->handle, $option);
     }
 
     public function setOption(int $option, mixed $value): bool
     {
+        if ($this->handle === null || $this->handle === false) {
+            return false;
+        }
+
         return curl_setopt($this->handle, $option, $value);
     }
 
     public function getErrorNumber(): int
     {
+        if ($this->handle === null || $this->handle === false) {
+            return 0;
+        }
+
         return curl_errno($this->handle);
     }
 
     public function getErrorMessage(): string
     {
+        if ($this->handle === null || $this->handle === false) {
+            return '';
+        }
+
         return curl_error($this->handle);
     }
 

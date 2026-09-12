@@ -64,4 +64,22 @@ class CurlMultiRequestQueryTest extends TestCase
         $this->assertSame(-1, $multiQuery->select());
         $this->assertFalse($multiQuery->infoRead());
     }
+
+    public function testCanAddHandleAfterClose(): void
+    {
+        $multiQuery = new CurlMultiRequestQuery();
+        $query = $this->createMock(CurlQueryInterface::class);
+        $handle = curl_init();
+        $query->method('getRawHandle')->willReturn($handle);
+
+        $this->assertSame(0, $multiQuery->addHandle($query));
+        $this->assertSame(0, $multiQuery->removeHandle($query));
+        $multiQuery->close();
+
+        $secondHandle = curl_init();
+        $query->method('getRawHandle')->willReturn($secondHandle);
+        $this->assertSame(0, $multiQuery->addHandle($query));
+        $this->assertSame(0, $multiQuery->removeHandle($query));
+        $multiQuery->close();
+    }
 }
