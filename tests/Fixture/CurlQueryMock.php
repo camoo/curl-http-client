@@ -33,6 +33,8 @@ final class CurlQueryMock
                 'getErrorNumber',
                 'close',
                 'setOption',
+                'getContent',
+                'getRawHandle',
             ])->getMock();
     }
 

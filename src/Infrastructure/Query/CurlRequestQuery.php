@@ -20,6 +20,33 @@ final class CurlRequestQuery implements CurlQueryInterface
         return curl_exec($this->handle);
     }
 
+    public function getContent(): bool|string
+    {
+        if (null === $this->handle || false === $this->handle) {
+            return false;
+        }
+
+        return curl_multi_getcontent($this->handle);
+    }
+
+    public function getRawHandle(): mixed
+    {
+        return $this->handle;
+    }
+
+    /**
+     * A query is used as a prototype by MultiCurl. Each clone needs its own
+     * native handle; cloning a CurlHandle would otherwise make requests share
+     * the same underlying transfer.
+     */
+    public function __clone()
+    {
+        $this->handle = curl_init();
+        if (false === $this->handle) {
+            throw new ClientException('Request Handle was not initiated successfully !');
+        }
+    }
+
     public function close(): void
     {
         $this->handle = null;

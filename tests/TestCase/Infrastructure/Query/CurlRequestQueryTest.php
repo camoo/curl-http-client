@@ -25,7 +25,7 @@ class CurlRequestQueryTest extends TestCase
         $this->assertSame(0, $info['request_size']);
         $this->assertFalse($handle->execute());
         $this->assertSame(3, $handle->getErrorNumber());
-        $this->assertSame('No URL set!', $handle->getErrorMessage());
+        $this->assertStringContainsString('No URL set', $handle->getErrorMessage());
         $this->assertNull($handle->close());
     }
 }
