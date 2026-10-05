@@ -25,8 +25,47 @@ final class Configuration
         private string $userAgent = self::USER_AGENT,
         private bool $debug = false,
         private string $debugFile = self::DEBUG_FILE,
+        private bool $followRedirects = true,
+        private int $maxRedirects = 10,
+        private bool $unrestrictedAuth = false,
     ) {
         $this->tempFolderPath = sys_get_temp_dir();
+    }
+
+    public function getFollowRedirects(): bool
+    {
+        return $this->followRedirects;
+    }
+
+    public function setFollowRedirects(bool $followRedirects): self
+    {
+        $this->followRedirects = $followRedirects;
+
+        return $this;
+    }
+
+    public function getMaxRedirects(): int
+    {
+        return $this->maxRedirects;
+    }
+
+    public function setMaxRedirects(int $maxRedirects): self
+    {
+        $this->maxRedirects = $maxRedirects;
+
+        return $this;
+    }
+
+    public function getUnrestrictedAuth(): bool
+    {
+        return $this->unrestrictedAuth;
+    }
+
+    public function setUnrestrictedAuth(bool $unrestrictedAuth): self
+    {
+        $this->unrestrictedAuth = $unrestrictedAuth;
+
+        return $this;
     }
 
     public function getTimeout(): int
@@ -201,14 +240,14 @@ final class Configuration
         return $this->tempFolderPath;
     }
 
-    /** Gets the default configuration instance */
+    /** Gets a new configuration instance initialized from defaults */
     public static function create(): self
     {
         if (self::$defaultConfiguration === null) {
             self::$defaultConfiguration = new self();
         }
 
-        return self::$defaultConfiguration;
+        return clone self::$defaultConfiguration;
     }
 
     /**

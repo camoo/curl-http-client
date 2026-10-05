@@ -105,6 +105,15 @@ class UriTest extends TestCase
         $this->assertSame($uri, $newUri);
     }
 
+    public function testWithPortNull(): void
+    {
+        $uri = new Uri('https://example.com:8080');
+        $this->assertSame(8080, $uri->getPort());
+        $newUri = $uri->withPort(null);
+        $this->assertNull($newUri->getPort());
+        $this->assertSame('https://example.com', (string)$newUri);
+    }
+
     public function testWithPath(): void
     {
         $uri = new Uri('https://example.com');

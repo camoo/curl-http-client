@@ -16,7 +16,7 @@ final class Stream implements StreamInterface
 {
     private const ERROR_MESSAGE = 'ResourceStream::$stream must be a stream.';
 
-    /** @param string|resource $stream */
+    /** @param string|resource|null $stream */
     public function __construct(private mixed $stream, string $accessMode = 'r+')
     {
         $this->applyStream($accessMode);
@@ -46,17 +46,19 @@ final class Stream implements StreamInterface
 
     public function close(): void
     {
-        if ($this->stream != null) {
+        if (is_resource($this->stream)) {
             fclose($this->stream);
         }
+        $this->detach();
     }
 
     /** @return resource|null */
     public function detach()
     {
-        fclose($this->stream);
+        $resource = $this->stream;
+        $this->stream = null;
 
-        return $this->stream;
+        return is_resource($resource) ? $resource : null;
     }
 
     public function getSize(): ?int
@@ -65,8 +67,14 @@ final class Stream implements StreamInterface
             return null;
         }
 
-        /** @var array{"size": string} $stat */
+        if (!$this->isSeekable()) {
+            return null;
+        }
+
         $stat = fstat($this->stream);
+        if ($stat === false || !isset($stat['size'])) {
+            return null;
+        }
 
         return (int)$stat['size'];
     }
@@ -74,7 +82,7 @@ final class Stream implements StreamInterface
     public function tell(): int
     {
         try {
-            if (get_resource_type($this->stream) !== 'stream') {
+            if (!is_resource($this->stream) || get_resource_type($this->stream) !== 'stream') {
                 throw new StreamException(self::ERROR_MESSAGE, 2);
             }
 
@@ -86,7 +94,22 @@ final class Stream implements StreamInterface
 
     public function eof(): bool
     {
-        return $this->tell() === $this->getSize();
+        if (!is_resource($this->stream)) {
+            return true;
+        }
+
+        if (feof($this->stream)) {
+            return true;
+        }
+
+        if ($this->isSeekable()) {
+            $size = $this->getSize();
+            if ($size !== null && $this->tell() >= $size) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     public function isSeekable(): bool
@@ -101,7 +124,7 @@ final class Stream implements StreamInterface
     public function seek(int $offset, int $whence = SEEK_SET): void
     {
         try {
-            if (get_resource_type($this->stream) !== 'stream') {
+            if (!is_resource($this->stream) || get_resource_type($this->stream) !== 'stream') {
                 throw new Exception(self::ERROR_MESSAGE, 2);
             }
             fseek($this->stream, $offset, $whence);
@@ -113,7 +136,7 @@ final class Stream implements StreamInterface
     public function rewind(): void
     {
         try {
-            if (get_resource_type($this->stream) !== 'stream') {
+            if (!is_resource($this->stream) || get_resource_type($this->stream) !== 'stream') {
                 throw new Exception(self::ERROR_MESSAGE, 2);
             }
             rewind($this->stream);
@@ -132,13 +155,13 @@ final class Stream implements StreamInterface
             return false;
         }
 
-        return stristr($metadata, 'w') !== false;
+        return preg_match('/[waxc+]/i', $metadata) === 1;
     }
 
     public function write(string $string): int
     {
         try {
-            if (get_resource_type($this->stream) !== 'stream') {
+            if (!is_resource($this->stream) || get_resource_type($this->stream) !== 'stream') {
                 throw new Exception(self::ERROR_MESSAGE, 2);
             }
 
@@ -159,21 +182,26 @@ final class Stream implements StreamInterface
             return false;
         }
 
-        return stristr($mode, 'w+') !== false
-            || stristr($mode, 'r') !== false;
+        return preg_match('/[r+]/i', $mode) === 1;
     }
 
     public function read(int $length): string
     {
+        if ($length === 0) {
+            return '';
+        }
+
         try {
-            if (get_resource_type($this->stream) !== 'stream') {
+            if (!is_resource($this->stream) || get_resource_type($this->stream) !== 'stream') {
                 throw new Exception(self::ERROR_MESSAGE, 2);
             }
             if ($length < 0) {
                 throw new LogicException('Length must not be negative.');
             }
 
-            return fread($this->stream, $length) ?: '';
+            $result = fread($this->stream, $length);
+
+            return $result === false ? '' : $result;
         } catch (Throwable $exception) {
             throw new StreamException('', $exception->getCode(), $exception);
         }
@@ -181,18 +209,31 @@ final class Stream implements StreamInterface
 
     public function getContents(): string
     {
-        return $this->read($this->getSize() - $this->tell());
+        if (!is_resource($this->stream) || get_resource_type($this->stream) !== 'stream') {
+            throw new StreamException(self::ERROR_MESSAGE, 2);
+        }
+
+        try {
+            $contents = stream_get_contents($this->stream);
+            if ($contents === false) {
+                throw new StreamException('Unable to read stream contents.');
+            }
+
+            return $contents;
+        } catch (Throwable $exception) {
+            throw new StreamException('', (int)$exception->getCode(), $exception);
+        }
     }
 
     public function getMetadata(?string $key = null): mixed
     {
-        if (!is_resource($this->stream) || $key === null) {
+        if (!is_resource($this->stream)) {
             return null;
         }
 
         $metaData = stream_get_meta_data($this->stream);
 
-        return $metaData[$key] ?? null;
+        return $key === null ? $metaData : ($metaData[$key] ?? null);
     }
 
     private function applyStream(string $accessMode): void

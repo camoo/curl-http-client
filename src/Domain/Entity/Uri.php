@@ -221,7 +221,7 @@ class Uri implements UriInterface, JsonSerializable
 
     public function withPort(?int $port): self
     {
-        $port = $this->filterPort((int)$port);
+        $port = $this->filterPort($port);
 
         if ($this->port === $port) {
             return $this;

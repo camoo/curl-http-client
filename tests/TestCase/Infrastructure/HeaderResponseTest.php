@@ -44,4 +44,64 @@ class HeaderResponseTest extends TestCase
         $this->assertInstanceOf(HttpHeaderInterface::class, $headerResponse->getHeaderEntity());
         $this->assertCount(22, $headerResponse->getHeaders());
     }
+
+    public function testCaseInsensitiveHeaders(): void
+    {
+        $raw = "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: 42\r\nServer: CustomServer\r\n\r\n";
+        $headerResponse = new HeaderResponse($raw);
+
+        $this->assertTrue($headerResponse->exists('content-type'));
+        $this->assertTrue($headerResponse->exists('CONTENT-TYPE'));
+        $this->assertSame('application/json', $headerResponse->getContentType());
+        $this->assertSame('42', $headerResponse->getContentLength());
+        $this->assertSame('CustomServer', $headerResponse->getServer());
+
+        $this->assertNotNull($headerResponse->getHeader('content-type'));
+        $this->assertSame('application/json', $headerResponse->getHeaderLine('content-type'));
+        $this->assertSame('application/json', $headerResponse->getHeaderLine('Content-Type'));
+        $header = $headerResponse->getHeader('Content-Type');
+        $this->assertInstanceOf(HttpField::class, $header);
+        $this->assertSame('application/json', $header->getValue());
+        $this->assertArrayHasKey('Content-Type', $headerResponse->getHeaders());
+
+        $headerResponse->remove('content-type');
+        $this->assertFalse($headerResponse->exists('Content-Type'));
+        $this->assertNull($headerResponse->getHeader('content-type'));
+    }
+
+    public function testWithHeaderNormalizesExistingCasing(): void
+    {
+        $raw = "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\n\r\n";
+        $headerResponse = new HeaderResponse($raw);
+
+        $headerResponse->withHeader(new HttpField('content-type', 'text/html'));
+        $headers = $headerResponse->getHeaders();
+
+        // Should not have both 'Content-Type' and 'content-type'
+        $this->assertArrayHasKey('Content-Type', $headers);
+        $this->assertArrayNotHasKey('content-type', $headers);
+        $this->assertSame(['application/json', 'text/html'], $headers['Content-Type']);
+    }
+
+    public function testResponseWithoutReasonPhrase(): void
+    {
+        $raw = "HTTP/1.1 204\r\nContent-Type: text/plain\r\n\r\n";
+        $headerResponse = new HeaderResponse($raw);
+
+        $this->assertSame('204', $headerResponse->getCode());
+        $this->assertSame('HTTP/1.1', $headerResponse->getProtocol());
+        $this->assertSame('', $headerResponse->getMessage());
+        $this->assertSame('text/plain', $headerResponse->getContentType());
+    }
+
+    public function testResponseHttp2WithoutReasonPhrase(): void
+    {
+        $raw = "HTTP/2 200\r\ncontent-type: application/json\r\n\r\n";
+        $headerResponse = new HeaderResponse($raw);
+
+        $this->assertSame('200', $headerResponse->getCode());
+        $this->assertSame('HTTP/2', $headerResponse->getProtocol());
+        $this->assertSame('', $headerResponse->getMessage());
+        $this->assertSame('application/json', $headerResponse->getContentType());
+    }
 }

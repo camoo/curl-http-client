@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Camoo\Http\Curl\Infrastructure;
 
+use Camoo\Http\Curl\Domain\Entity\Stream;
 use Camoo\Http\Curl\Domain\Header\HeaderResponseInterface;
 use Camoo\Http\Curl\Domain\Response\ResponseInterface;
 use Camoo\Http\Curl\Domain\Trait\MessageTrait;
@@ -25,6 +26,8 @@ class Response implements ResponseInterface
         private int $statusCode = 0,
         private string $reasonPhrase = '',
     ) {
+        $this->headerResponse ??= new HeaderResponse('');
+        $this->body ??= new Stream('');
     }
 
     public function getStatusCode(): int
@@ -34,10 +37,11 @@ class Response implements ResponseInterface
 
     public function withStatus(int $code, string $reasonPhrase = ''): self
     {
-        $this->statusCode = $code;
-        $this->reasonPhrase = $reasonPhrase;
+        $new = clone $this;
+        $new->statusCode = $code;
+        $new->reasonPhrase = $reasonPhrase;
 
-        return $this;
+        return $new;
     }
 
     public function getReasonPhrase(): string

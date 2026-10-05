@@ -127,10 +127,13 @@ class ConfigurationTest extends TestCase
 
     public function testSetDefaultConfiguration(): void
     {
-        $configuration = new Configuration();
+        $configuration = new Configuration(45);
         Configuration::setDefaultConfiguration($configuration);
 
-        $this->assertSame($configuration, Configuration::create());
+        $created = Configuration::create();
+        $this->assertEquals($configuration, $created);
+        $this->assertSame(45, $created->getTimeout());
+        $this->assertNotSame($configuration, $created);
     }
 
     public function testToDebugReport(): void
@@ -141,5 +144,29 @@ class ConfigurationTest extends TestCase
         $expectedReport .= '    Temp Folder Path: ' . sys_get_temp_dir() . PHP_EOL;
 
         $this->assertSame($expectedReport, Configuration::toDebugReport());
+    }
+
+    public function testGetAndSetFollowRedirects(): void
+    {
+        $configuration = new Configuration();
+        $this->assertTrue($configuration->getFollowRedirects());
+        $newConfiguration = $configuration->setFollowRedirects(false);
+        $this->assertFalse($newConfiguration->getFollowRedirects());
+    }
+
+    public function testGetAndSetMaxRedirects(): void
+    {
+        $configuration = new Configuration();
+        $this->assertSame(10, $configuration->getMaxRedirects());
+        $newConfiguration = $configuration->setMaxRedirects(5);
+        $this->assertSame(5, $newConfiguration->getMaxRedirects());
+    }
+
+    public function testGetAndSetUnrestrictedAuth(): void
+    {
+        $configuration = new Configuration();
+        $this->assertFalse($configuration->getUnrestrictedAuth());
+        $newConfiguration = $configuration->setUnrestrictedAuth(true);
+        $this->assertTrue($newConfiguration->getUnrestrictedAuth());
     }
 }
