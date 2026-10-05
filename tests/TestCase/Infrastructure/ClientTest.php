@@ -15,6 +15,7 @@ use Camoo\Http\Curl\Infrastructure\Client;
 use Camoo\Http\Curl\Infrastructure\Exception\ClientException;
 use Camoo\Http\Curl\Infrastructure\Request;
 use Camoo\Http\Curl\Test\Fixture\CurlQueryMock;
+use Psr\Http\Message\RequestInterface as PsrRequestInterface;
 use PHPUnit\Framework\TestCase;
 
 class ClientTest extends TestCase
@@ -120,6 +121,28 @@ class ClientTest extends TestCase
             'localhost=0bcpoc8vq6gu4opv4o573940f; expires=Mon, ' . gmdate('d-M-Y') . ' GMT; Max-Age=900; path=/; domain=localhost',
             'PHPSESSID=6sf8fa8rlm8c44avk33hhcegt0; path=/; HttpOnly',
         ], $response->getHeader('set-cookie'));
+    }
+
+    public function testImplementsPsr18AndAcceptsAnyPsr7Request(): void
+    {
+        $fixture = $this->curlQueryMock->getFixture();
+        $this->curlQuery->method('execute')->willReturn($fixture->getResponse());
+        $this->curlQuery->method('getInfo')->willReturn($fixture->getInfo());
+        $this->curlQuery->method('getErrorMessage')->willReturn('');
+        $this->curlQuery->method('getErrorNumber')->willReturn(0);
+        $this->curlQuery->method('close');
+
+        $request = $this->createMock(PsrRequestInterface::class);
+        $request->method('getUri')->willReturn(new Uri('https://example.com/resource'));
+        $request->method('getHeaders')->willReturn(['Content-Type' => ['application/json']]);
+        $request->method('getMethod')->willReturn('POST');
+        $request->method('getBody')->willReturn(new \Camoo\Http\Curl\Domain\Entity\Stream('{"name":"camoo"}'));
+
+        self::assertInstanceOf(\Psr\Http\Client\ClientInterface::class, $this->client);
+        $response = $this->client->sendRequest($request);
+
+        self::assertInstanceOf(\Psr\Http\Message\ResponseInterface::class, $response);
+        self::assertSame(200, $response->getStatusCode());
     }
 
     public function testWithWrongHeaderTypeThrowsException(): void

@@ -4,11 +4,11 @@ declare(strict_types=1);
 
 namespace Camoo\Http\Curl\Domain\Client;
 
-use Camoo\Http\Curl\Domain\Request\RequestInterface;
 use Camoo\Http\Curl\Domain\Response\ResponseInterface;
 use Camoo\Http\Curl\Infrastructure\Exception\ClientException;
+use Psr\Http\Message\RequestInterface;
 
-interface ClientInterface
+interface ClientInterface extends \Psr\Http\Client\ClientInterface
 {
     public function head(string $url, array $headers = []): ResponseInterface;
 
