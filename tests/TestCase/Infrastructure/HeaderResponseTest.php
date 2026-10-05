@@ -82,4 +82,26 @@ class HeaderResponseTest extends TestCase
         $this->assertArrayNotHasKey('content-type', $headers);
         $this->assertSame(['application/json', 'text/html'], $headers['Content-Type']);
     }
+
+    public function testResponseWithoutReasonPhrase(): void
+    {
+        $raw = "HTTP/1.1 204\r\nContent-Type: text/plain\r\n\r\n";
+        $headerResponse = new HeaderResponse($raw);
+
+        $this->assertSame('204', $headerResponse->getCode());
+        $this->assertSame('HTTP/1.1', $headerResponse->getProtocol());
+        $this->assertSame('', $headerResponse->getMessage());
+        $this->assertSame('text/plain', $headerResponse->getContentType());
+    }
+
+    public function testResponseHttp2WithoutReasonPhrase(): void
+    {
+        $raw = "HTTP/2 200\r\ncontent-type: application/json\r\n\r\n";
+        $headerResponse = new HeaderResponse($raw);
+
+        $this->assertSame('200', $headerResponse->getCode());
+        $this->assertSame('HTTP/2', $headerResponse->getProtocol());
+        $this->assertSame('', $headerResponse->getMessage());
+        $this->assertSame('application/json', $headerResponse->getContentType());
+    }
 }
