@@ -11,8 +11,9 @@ use Camoo\Http\Curl\Domain\Entity\Stream;
 use Camoo\Http\Curl\Domain\Request\RequestInterface;
 use Camoo\Http\Curl\Domain\Response\ResponseInterface;
 use Camoo\Http\Curl\Infrastructure\Exception\ClientException;
+use Psr\Http\Message\RequestInterface as PsrRequestInterface;
 
-final class Client implements ClientInterface
+final readonly class Client implements ClientInterface
 {
     private const GET = 'GET';
 
@@ -62,8 +63,9 @@ final class Client implements ClientInterface
         return $this->sendRequest($this->buildRequest($url, $headers, [], self::DELETE));
     }
 
-    public function sendRequest(RequestInterface $request): ResponseInterface
+    public function sendRequest(PsrRequestInterface $request): ResponseInterface
     {
+        $request = $this->normalizeRequest($request);
         $handle = $request->getRequestHandle();
 
         $responses = $handle->execute();
@@ -83,10 +85,28 @@ final class Client implements ClientInterface
         if ($errorNumber !== 0 || !isset($status['http_code'])) {
             throw new ClientException($error);
         }
-        $response = (new Response($headerResponse, new Stream($body)))
+        return (new Response($headerResponse, new Stream($body)))
             ->withStatus((int)$status['http_code'], $headerResponse->getHeaderEntity()->getMessage());
+    }
 
-        return $response;
+    private function normalizeRequest(PsrRequestInterface $request): RequestInterface
+    {
+        if ($request instanceof RequestInterface) {
+            return $request;
+        }
+
+        $config = $this->configuration ?? Configuration::create();
+
+        return new Request(
+            $config,
+            $request->getUri(),
+            $request->getHeaders(),
+            [],
+            $request->getMethod(),
+            null,
+            $request->getBody(),
+            $this->curlQuery
+        );
     }
 
     private function buildRequest(

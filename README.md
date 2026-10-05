@@ -1,6 +1,6 @@
 # curl-http-client
 Simple Curl Http Client build with the clean code architecture approach.
-PSR-7 standard
+PSR-7 and PSR-18 compatible HTTP client.
 
 <p align="center">
     <a href="https://github.com/camoo/curl-http-client" target="_blank">
@@ -39,6 +39,18 @@ $header = $response->getHeader('foo');
 // get status code
 $code = $response->getStatusCode();
 
+```
+
+### PSR-18
+
+`Client` implements `Psr\Http\Client\ClientInterface` and accepts any PSR-7 request implementation:
+
+```php
+use Camoo\Http\Curl\Infrastructure\Client;
+use Psr\Http\Message\RequestInterface;
+
+/** @var RequestInterface $request */
+$response = (new Client())->sendRequest($request);
 ```
 
 ### With dependency injection

@@ -275,7 +275,10 @@ class Request implements RequestInterface
             $this->curlQuery->setOption(CURLOPT_POST, 1);
         }
 
-        if (!in_array($method, [self::POST, self::PUT, self::PATCH], true)) {
+        $bodyContent = $this->body instanceof StreamInterface ? (string)$this->body : '';
+        $hasBody = $this->hasExplicitBody || $bodyContent !== '';
+
+        if (!in_array($method, [self::POST, self::PUT, self::PATCH], true) && !$hasBody) {
             return;
         }
         $postData = $data;
@@ -283,8 +286,6 @@ class Request implements RequestInterface
         if ($isJson && !is_string($data)) {
             $postData = json_encode($data);
         }
-        $bodyContent = $this->body instanceof StreamInterface ? (string)$this->body : '';
-        $hasBody = $this->hasExplicitBody || $bodyContent !== '';
         if ($hasBody) {
             $postData = $bodyContent;
         }
