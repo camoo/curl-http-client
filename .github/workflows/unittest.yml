@@ -10,18 +10,25 @@ permissions:
   contents: read
 
 jobs:
-  build:
-
+  test:
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        php-version: ['8.0', '8.1', '8.2', '8.3', '8.4', '8.5']
+        include:
+          - php-version: '8.1'
+            upload-coverage: true
 
     steps:
     - uses: actions/checkout@v3
 
-    - name: Setup PHP with Xdebug
+    - name: Setup PHP
       uses: shivammathur/setup-php@v2
       with:
-        php-version: '8.1'
-        coverage: xdebug
+        php-version: ${{ matrix.php-version }}
+        coverage: ${{ matrix.upload-coverage && 'xdebug' || 'none' }}
+
     - name: Validate composer.json and composer.lock
       run: composer validate --strict
 
@@ -30,9 +37,9 @@ jobs:
       uses: actions/cache@v3
       with:
         path: vendor
-        key: ${{ runner.os }}-php-${{ hashFiles('**/composer.lock') }}
+        key: ${{ runner.os }}-php-${{ matrix.php-version }}-${{ hashFiles('**/composer.lock') }}
         restore-keys: |
-          ${{ runner.os }}-php-
+          ${{ runner.os }}-php-${{ matrix.php-version }}-
 
     - name: Install dependencies
       run: composer install --prefer-dist --no-progress
@@ -40,13 +47,37 @@ jobs:
     - name: Copy phpunit.xml.dist
       run: cp phpunit.xml.dist phpunit.xml
 
-    - name: Run tests
+    - name: Run tests with coverage
+      if: matrix.upload-coverage == true
       run: vendor/bin/phpunit --coverage-clover coverage.xml
+
+    - name: Run tests
+      if: matrix.upload-coverage != true
+      run: vendor/bin/phpunit
+
     - name: Upload coverage to Codecov
+      if: matrix.upload-coverage == true
       uses: codecov/codecov-action@v3
       with:
         files: coverage.xml
-        fail_ci_if_error: true
+        fail_ci_if_error: false
         flags: unittests
         name: codecov-umbrella
         verbose: true
+
+  static-analysis:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Setup PHP
+      uses: shivammathur/setup-php@v2
+      with:
+        php-version: '8.2'
+        tools: phpstan
+
+    - name: Install dependencies
+      run: composer install --prefer-dist --no-progress
+
+    - name: Run PHPStan
+      run: phpstan analyse src --level=3

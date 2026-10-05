@@ -119,28 +119,45 @@ final class MultiCurl implements MultiCurlInterface
         $map = [];
 
         foreach ($pendingPromises as $key => $promise) {
-            $request = $promise->getRequest();
-            $query = $request->getRequestHandle();
-            $result = $this->multiCurlQuery->addHandle($query);
-            if ($result !== CURLM_OK) {
-                $promise->reject(new ClientException(sprintf('Unable to add cURL handle (%d).', $result)));
-                continue;
+            $query = null;
+            try {
+                $request = $promise->getRequest();
+                $query = $request->getRequestHandle();
+                $result = $this->multiCurlQuery->addHandle($query);
+                if ($result !== CURLM_OK) {
+                    $query->close();
+                    $promise->reject(new ClientException(sprintf('Unable to add cURL handle (%d).', $result)));
+                    continue;
+                }
+
+                $id = $this->getHandleId($query->getRawHandle());
+
+                $map[$id] = [
+                    'key' => $key,
+                    'promise' => $promise,
+                    'query' => $query,
+                ];
+            } catch (\Throwable $e) {
+                if ($query instanceof CurlQueryInterface) {
+                    $query->close();
+                }
+                $promise->reject($e);
             }
+        }
 
-            $id = $this->getHandleId($query->getRawHandle());
+        if (empty($map)) {
+            $this->multiCurlQuery->close();
 
-            $map[$id] = [
-                'key' => $key,
-                'promise' => $promise,
-                'query' => $query,
-            ];
+            return $this->getSettledResponses();
         }
 
         $stillRunning = 0;
         do {
             $status = $this->multiCurlQuery->exec($stillRunning);
             if ($status === CURLM_OK && $stillRunning > 0) {
-                $this->multiCurlQuery->select(0.1);
+                if ($this->multiCurlQuery->select(0.1) === -1) {
+                    usleep(1000);
+                }
             }
         } while ($stillRunning > 0 && ($status === CURLM_OK || $this->isPerformingCallMultiPerform($status)));
 
@@ -177,8 +194,8 @@ final class MultiCurl implements MultiCurlInterface
                 $headerResponse = new HeaderResponse($headers);
                 $body = substr($responseStr, $headerSize);
 
-                $response = new Response($headerResponse, new Stream($body));
-                $response->withStatus((int)$status['http_code'], $headerResponse->getHeaderEntity()->getMessage());
+                $response = (new Response($headerResponse, new Stream($body)))
+                    ->withStatus((int)$status['http_code'], $headerResponse->getHeaderEntity()->getMessage());
 
                 $promise->resolve($response);
             } catch (\Throwable $e) {

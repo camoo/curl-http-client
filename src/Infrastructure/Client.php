@@ -83,8 +83,8 @@ final class Client implements ClientInterface
         if ($errorNumber !== 0 || !isset($status['http_code'])) {
             throw new ClientException($error);
         }
-        $response = new Response($headerResponse, new Stream($body));
-        $response->withStatus((int)$status['http_code'], $headerResponse->getHeaderEntity()->getMessage());
+        $response = (new Response($headerResponse, new Stream($body)))
+            ->withStatus((int)$status['http_code'], $headerResponse->getHeaderEntity()->getMessage());
 
         return $response;
     }

@@ -28,7 +28,7 @@ interface HeaderResponseInterface
 
     public function withHeader(HttpField $field): self;
 
-    public function getHeaderEntity(): HttpHeaderInterface|HttpResponseHeader;
+    public function getHeaderEntity(): HttpResponseHeader;
 
     public function exists(string $name): bool;
 

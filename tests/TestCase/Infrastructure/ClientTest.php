@@ -116,10 +116,10 @@ class ClientTest extends TestCase
         $this->assertSame('HTTP/2', $response->getProtocolVersion());
         $this->assertSame('OK', $response->getReasonPhrase());
         $this->assertSame('camooCloud', $response->getHeaderLine('server'));
-        $this->assertEquals(['set-cookie' => [
+        $this->assertEquals([
             'localhost=0bcpoc8vq6gu4opv4o573940f; expires=Mon, ' . gmdate('d-M-Y') . ' GMT; Max-Age=900; path=/; domain=localhost',
             'PHPSESSID=6sf8fa8rlm8c44avk33hhcegt0; path=/; HttpOnly',
-        ]], $response->getHeader('set-cookie'));
+        ], $response->getHeader('set-cookie'));
     }
 
     public function testWithWrongHeaderTypeThrowsException(): void
@@ -180,5 +180,26 @@ class ClientTest extends TestCase
         );
         $response = $this->client->sendRequest($request);
         $this->assertInstanceOf(ResponseInterface::class, $response);
+    }
+
+    public function testClientInterfaceParameterDefaults(): void
+    {
+        $reflection = new \ReflectionClass(ClientInterface::class);
+
+        foreach (['head', 'get', 'delete'] as $method) {
+            $param = $reflection->getMethod($method)->getParameters()[1];
+            $this->assertTrue($param->isOptional());
+            $this->assertSame([], $param->getDefaultValue());
+        }
+
+        foreach (['post', 'put', 'patch'] as $method) {
+            $dataParam = $reflection->getMethod($method)->getParameters()[1];
+            $this->assertTrue($dataParam->isOptional());
+            $this->assertSame([], $dataParam->getDefaultValue());
+
+            $headersParam = $reflection->getMethod($method)->getParameters()[2];
+            $this->assertTrue($headersParam->isOptional());
+            $this->assertSame([], $headersParam->getDefaultValue());
+        }
     }
 }

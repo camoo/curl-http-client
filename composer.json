@@ -12,10 +12,8 @@
     "require-dev": {
         "phpunit/phpunit": "^9"
     },
-    "minimum-stability": "dev",
     "homepage": "https://www.camoo.hosting",
     "license": "MIT",
-    "prefer-stable": true,
     "authors": [
         {
             "name": "CAMOO SARL",

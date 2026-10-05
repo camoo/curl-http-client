@@ -70,4 +70,46 @@ class ResponseTest extends TestCase
         $newResponse = $response->withBody(new Stream('wrong json'));
         $newResponse->getJson();
     }
+
+    public function testNewResponseWithNoArguments(): void
+    {
+        $response = new Response();
+        $this->assertSame(0, $response->getStatusCode());
+        $this->assertSame('', $response->getReasonPhrase());
+        $this->assertSame('1.1', $response->getProtocolVersion());
+        $this->assertSame([], $response->getHeaders());
+        $this->assertSame([], $response->getHeader('foo'));
+        $this->assertSame('', $response->getHeaderLine('foo'));
+        $this->assertFalse($response->hasHeader('foo'));
+        $this->assertSame('', (string)$response->getBody());
+    }
+
+    public function testResponseImmutability(): void
+    {
+        $response = new Response();
+        $withStatus = $response->withStatus(200, 'OK');
+        $this->assertNotSame($response, $withStatus);
+        $this->assertSame(0, $response->getStatusCode());
+        $this->assertSame(200, $withStatus->getStatusCode());
+        $this->assertSame('OK', $withStatus->getReasonPhrase());
+
+        $withHeader = $response->withHeader('X-Custom', 'val');
+        $this->assertNotSame($response, $withHeader);
+        $this->assertFalse($response->hasHeader('X-Custom'));
+        $this->assertTrue($withHeader->hasHeader('X-Custom'));
+
+        $withAdded = $withHeader->withAddedHeader('X-Custom', 'val2');
+        $this->assertNotSame($withHeader, $withAdded);
+        $this->assertSame(['val'], $withHeader->getHeader('X-Custom'));
+        $this->assertSame(['val', 'val2'], $withAdded->getHeader('X-Custom'));
+
+        $without = $withAdded->withoutHeader('X-Custom');
+        $this->assertNotSame($withAdded, $without);
+        $this->assertTrue($withAdded->hasHeader('X-Custom'));
+        $this->assertFalse($without->hasHeader('X-Custom'));
+
+        $withProtocol = $response->withProtocolVersion('2.0');
+        $this->assertNotSame($response, $withProtocol);
+        $this->assertSame('2.0', $withProtocol->getProtocolVersion());
+    }
 }

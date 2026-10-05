@@ -167,4 +167,75 @@ class MultiCurlTest extends TestCase
 
         $this->assertEmpty($responses);
     }
+
+    public function testExecuteHandlesSetupFailureWithoutAbortingBatch(): void
+    {
+        $multiCurl = new MultiCurl(null, $this->multiCurlQuery);
+
+        $fixture2 = $this->curlQueryMock->getFixture(200);
+        $handleObj2 = new \stdClass();
+
+        $this->curlQuery2->method('getRawHandle')->willReturn($handleObj2);
+        $this->curlQuery2->method('getContent')->willReturn($fixture2->getResponse());
+        $this->curlQuery2->method('getInfo')->willReturn($fixture2->getInfo());
+        $this->curlQuery2->method('getErrorNumber')->willReturn(0);
+        $this->curlQuery2->method('getErrorMessage')->willReturn('');
+
+        // req1 fails during getRequestHandle setup
+        $req1 = $this->createMock(RequestInterface::class);
+        $req1->method('getRequestHandle')->willThrowException(new \RuntimeException('Setup failed'));
+
+        // req2 succeeds
+        $req2 = $this->createMock(RequestInterface::class);
+        $req2->method('getRequestHandle')->willReturn($this->curlQuery2);
+
+        $p1 = $multiCurl->add($req1);
+        $p2 = $multiCurl->add($req2);
+
+        $this->multiCurlQuery->expects($this->once())->method('addHandle');
+        $this->multiCurlQuery->method('exec')->willReturn(0);
+        $this->multiCurlQuery->expects($this->once())->method('removeHandle');
+        $this->multiCurlQuery->expects($this->once())->method('close');
+
+        $responses = $multiCurl->send();
+
+        $this->assertCount(1, $responses);
+        $this->assertTrue($p1->isRejected());
+        $this->assertSame('Setup failed', $p1->getReason()->getMessage());
+        $this->assertTrue($p2->isFulfilled());
+    }
+
+    public function testExecuteHandlesSelectReturningMinusOne(): void
+    {
+        $multiCurl = new MultiCurl(null, $this->multiCurlQuery);
+
+        $fixture = $this->curlQueryMock->getFixture(200);
+        $handleObj = new \stdClass();
+
+        $this->curlQuery1->method('getRawHandle')->willReturn($handleObj);
+        $this->curlQuery1->method('getContent')->willReturn($fixture->getResponse());
+        $this->curlQuery1->method('getInfo')->willReturn($fixture->getInfo());
+        $this->curlQuery1->method('getErrorNumber')->willReturn(0);
+        $this->curlQuery1->method('getErrorMessage')->willReturn('');
+
+        $req = $this->createMock(RequestInterface::class);
+        $req->method('getRequestHandle')->willReturn($this->curlQuery1);
+
+        $multiCurl->add($req);
+
+        $execCount = 0;
+        $this->multiCurlQuery->method('exec')->willReturnCallback(function (int &$stillRunning) use (&$execCount): int {
+            $execCount++;
+            $stillRunning = $execCount === 1 ? 1 : 0;
+
+            return CURLM_OK;
+        });
+
+        $this->multiCurlQuery->expects($this->once())->method('select')->willReturn(-1);
+        $this->multiCurlQuery->method('removeHandle');
+        $this->multiCurlQuery->method('close');
+
+        $responses = $multiCurl->send();
+        $this->assertCount(1, $responses);
+    }
 }

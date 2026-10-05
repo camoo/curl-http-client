@@ -8,11 +8,13 @@ use BFunky\HttpParser\Entity\HttpField;
 use BFunky\HttpParser\Entity\HttpResponseHeader;
 use Camoo\Http\Curl\Application\Query\CurlQueryInterface;
 use Camoo\Http\Curl\Domain\Entity\Configuration;
+use Camoo\Http\Curl\Domain\Entity\Stream;
 use Camoo\Http\Curl\Domain\Entity\Uri;
 use Camoo\Http\Curl\Domain\Exception\InvalidArgumentException;
 use Camoo\Http\Curl\Domain\Header\HeaderResponseInterface;
 use Camoo\Http\Curl\Domain\Request\RequestInterface;
 use Camoo\Http\Curl\Infrastructure\Request;
+use Camoo\Http\Curl\Test\Fixture\CustomHeaderResponse;
 use PHPUnit\Framework\TestCase;
 use Psr\Http\Message\StreamInterface;
 use Psr\Http\Message\UriInterface;
@@ -213,71 +215,60 @@ class RequestTest extends TestCase
 
             return  new HttpField($line, '');
         });
-        $this->assertSame(['Content-Type' => 'application/json'], $request->getHeader('Content-Type'));
-        $this->assertSame(['Authorization' => ''], $request->getHeader('Authorization'));
+        $this->assertSame(['application/json'], $request->getHeader('Content-Type'));
+        $this->assertSame([''], $request->getHeader('Authorization'));
     }
 
     public function testWithHeader(): void
     {
         $uri = new Uri('https://example.com');
         $headers = ['Content-Type' => 'application/json'];
-        $newHeader = ['Authorization' => 'Bearer token'];
         $data = [];
         $method = 'GET';
-        $headerResponse = $this->createMock(HeaderResponseInterface::class);
-        $body = null;
         $curlQuery = $this->createMock(CurlQueryInterface::class);
 
-        $request = new Request(new Configuration(), $uri, $headers, $data, $method, $headerResponse, $body, $curlQuery);
-        $headerResponse->expects($this->exactly(2))->method('exists')->with('Authorization')->willReturn(true);
+        $request = new Request(new Configuration(), $uri, $headers, $data, $method, null, null, $curlQuery);
 
         $newRequest = $request->withHeader('Authorization', 'Bearer token');
 
-        $headerResponse->expects($this->once())->method('getHeaders')->willReturn($newHeader);
-
-        $this->assertSame($request, $newRequest);
-        $this->assertSame($newHeader, $newRequest->getHeaders());
+        $this->assertNotSame($request, $newRequest);
+        $this->assertSame(['Bearer token'], $newRequest->getHeader('Authorization'));
         $this->assertTrue($newRequest->hasHeader('Authorization'));
+        $this->assertFalse($request->hasHeader('Authorization'));
     }
 
     public function testWithAddedHeader(): void
     {
         $uri = new Uri('https://example.com');
         $headers = ['Content-Type' => 'application/json'];
-        $newHeader = ['Authorization' => 'Bearer token'];
-        $expectedHeaders = ['Content-Type' => 'application/json', 'Authorization' => 'Bearer token'];
         $data = [];
         $method = 'GET';
-        $headerResponse = $this->createMock(HeaderResponseInterface::class);
-        $body = null;
         $curlQuery = $this->createMock(CurlQueryInterface::class);
 
-        $request = new Request(new Configuration(), $uri, $headers, $data, $method, $headerResponse, $body, $curlQuery);
+        $request = new Request(new Configuration(), $uri, $headers, $data, $method, null, null, $curlQuery);
         $newRequest = $request->withAddedHeader('Authorization', 'Bearer token');
-        $headerResponse->expects($this->once())->method('getHeaders')->willReturn(array_merge($headers, $newHeader));
 
-        $this->assertSame($request, $newRequest);
-        $this->assertSame($expectedHeaders, $newRequest->getHeaders());
+        $this->assertNotSame($request, $newRequest);
+        $this->assertSame(['application/json'], $newRequest->getHeader('Content-Type'));
+        $this->assertSame(['Bearer token'], $newRequest->getHeader('Authorization'));
+        $this->assertFalse($request->hasHeader('Authorization'));
     }
 
     public function testWithoutHeader(): void
     {
         $uri = new Uri('https://example.com');
         $headers = ['Content-Type' => 'application/json', 'Authorization' => 'Bearer token'];
-        $expectedHeaders = ['Authorization' => 'Bearer token'];
         $data = [];
         $method = 'GET';
-        $headerResponse = $this->createMock(HeaderResponseInterface::class);
-        $body = null;
         $curlQuery = $this->createMock(CurlQueryInterface::class);
-        $headerResponse->expects($this->once())->method('exists')->with('Content-Type')->willReturn(true);
 
-        $request = new Request(new Configuration(), $uri, $headers, $data, $method, $headerResponse, $body, $curlQuery);
+        $request = new Request(new Configuration(), $uri, $headers, $data, $method, null, null, $curlQuery);
         $newRequest = $request->withoutHeader('Content-Type');
-        $headerResponse->expects($this->once())->method('getHeaders')->willReturn($expectedHeaders);
 
-        $this->assertSame($request, $newRequest);
-        $this->assertSame($expectedHeaders, $newRequest->getHeaders());
+        $this->assertNotSame($request, $newRequest);
+        $this->assertFalse($newRequest->hasHeader('Content-Type'));
+        $this->assertTrue($request->hasHeader('Content-Type'));
+        $this->assertSame(['Bearer token'], $newRequest->getHeader('Authorization'));
     }
 
     public function testGetBody(): void
@@ -358,7 +349,269 @@ class RequestTest extends TestCase
         $request = new Request(new Configuration(), $uri, $headers, $data, $method, $headerResponse, $body, $curlQuery);
         $newRequest = $request->withProtocolVersion('1.0');
 
-        $this->assertSame($request, $newRequest);
+        $this->assertNotSame($request, $newRequest);
         $this->assertSame('1.0', $newRequest->getProtocolVersion());
+    }
+
+    public function testMissingAndDuplicateHeaders(): void
+    {
+        $request = new Request(
+            new Configuration(),
+            'http://example.com',
+            ['Accept' => ['application/json', 'text/html']],
+            [],
+            'GET'
+        );
+
+        $this->assertSame([], $request->getHeader('Non-Existent'));
+        $this->assertSame('', $request->getHeaderLine('Non-Existent'));
+        $this->assertFalse($request->hasHeader('Non-Existent'));
+
+        $this->assertSame(['application/json', 'text/html'], $request->getHeader('Accept'));
+        $this->assertSame('application/json, text/html', $request->getHeaderLine('Accept'));
+
+        $newRequest = $request->withAddedHeader('Accept', 'text/plain');
+        $this->assertNotSame($request, $newRequest);
+        $this->assertSame(['application/json', 'text/html', 'text/plain'], $newRequest->getHeader('Accept'));
+        $this->assertSame('application/json, text/html, text/plain', $newRequest->getHeaderLine('Accept'));
+    }
+
+    public function testPreserveHost(): void
+    {
+        $request = new Request(
+            new Configuration(),
+            'http://example.com',
+            ['Host' => 'original.com'],
+            [],
+            'GET'
+        );
+
+        // Default preserveHost = false updates Host
+        $updated = $request->withUri(new Uri('https://newhost.com/path'), false);
+        $this->assertSame(['newhost.com'], $updated->getHeader('Host'));
+
+        // preserveHost = true keeps existing Host
+        $preserved = $request->withUri(new Uri('https://newhost.com/path'), true);
+        $this->assertSame(['original.com'], $preserved->getHeader('Host'));
+
+        // preserveHost = true updates Host if Host is missing
+        $noHost = $request->withoutHeader('Host');
+        $this->assertFalse($noHost->hasHeader('Host'));
+        $withHost = $noHost->withUri(new Uri('https://anotherhost.com/path'), true);
+        $this->assertSame(['anotherhost.com'], $withHost->getHeader('Host'));
+    }
+
+    public function testRepeatedRequestExecutionDoesNotMutateHeaders(): void
+    {
+        $curlQuery = $this->createMock(CurlQueryInterface::class);
+        $optionsSet = [];
+        $curlQuery->method('setOption')->willReturnCallback(function (int $opt, mixed $val) use (&$optionsSet): bool {
+            $optionsSet[$opt] = $val;
+            return true;
+        });
+
+        $config = new Configuration();
+        $headers = [
+            'auth' => ['type' => 'basic', 'username' => 'myuser', 'password' => 'mypass'],
+            'user-agent' => 'CustomAgent/2.0',
+            'X-Test-Header' => 'TestValue',
+        ];
+
+        $request = new Request($config, 'http://example.com', $headers, [], 'GET', null, null, $curlQuery);
+
+        // First execution
+        $handle1 = $request->getRequestHandle();
+        $this->assertSame('CustomAgent/2.0', $optionsSet[CURLOPT_USERAGENT]);
+        $this->assertSame('myuser:mypass', $optionsSet[CURLOPT_USERPWD]);
+        $this->assertSame(CURLAUTH_BASIC, $optionsSet[CURLOPT_HTTPAUTH]);
+
+        // Second execution on same request object
+        $optionsSet = [];
+        $handle2 = $request->getRequestHandle();
+        $this->assertSame('CustomAgent/2.0', $optionsSet[CURLOPT_USERAGENT]);
+        $this->assertSame('myuser:mypass', $optionsSet[CURLOPT_USERPWD]);
+        $this->assertSame(CURLAUTH_BASIC, $optionsSet[CURLOPT_HTTPAUTH]);
+        $this->assertSame(['TestValue'], $request->getHeader('X-Test-Header'));
+    }
+
+    public function testRedirectsAndAuthConfiguration(): void
+    {
+        $curlQuery = $this->createMock(CurlQueryInterface::class);
+        $optionsSet = [];
+        $curlQuery->method('setOption')->willReturnCallback(function (int $opt, mixed $val) use (&$optionsSet): bool {
+            $optionsSet[$opt] = $val;
+            return true;
+        });
+
+        $config = (new Configuration())
+            ->setFollowRedirects(false)
+            ->setMaxRedirects(3)
+            ->setUnrestrictedAuth(true);
+
+        $request = new Request($config, 'http://example.com', [], [], 'GET', null, null, $curlQuery);
+        $request->getRequestHandle();
+
+        $this->assertFalse($optionsSet[CURLOPT_FOLLOWLOCATION]);
+        $this->assertSame(3, $optionsSet[CURLOPT_MAXREDIRS]);
+        $this->assertTrue($optionsSet[CURLOPT_UNRESTRICTED_AUTH]);
+    }
+
+    public function testPostDataPreservedWhenNoExplicitBody(): void
+    {
+        $curlQuery = $this->createMock(CurlQueryInterface::class);
+        $optionsSet = [];
+        $curlQuery->method('setOption')->willReturnCallback(function (int $opt, mixed $val) use (&$optionsSet): bool {
+            $optionsSet[$opt] = $val;
+
+            return true;
+        });
+
+        $config = Configuration::create();
+        $data = ['hello' => 'world'];
+        $request = new Request($config, 'http://localhost/post', [], $data, 'POST', null, null, $curlQuery);
+        $request->getRequestHandle();
+
+        $this->assertSame($data, $optionsSet[CURLOPT_POSTFIELDS]);
+    }
+
+    public function testPostDataPreservedWithJsonHeader(): void
+    {
+        $curlQuery = $this->createMock(CurlQueryInterface::class);
+        $optionsSet = [];
+        $curlQuery->method('setOption')->willReturnCallback(function (int $opt, mixed $val) use (&$optionsSet): bool {
+            $optionsSet[$opt] = $val;
+
+            return true;
+        });
+
+        $config = Configuration::create();
+        $data = ['hello' => 'world'];
+        $request = new Request($config, 'http://localhost/post', ['Content-Type' => 'application/json'], $data, 'POST', null, null, $curlQuery);
+        $request->getRequestHandle();
+
+        $this->assertSame(json_encode($data), $optionsSet[CURLOPT_POSTFIELDS]);
+    }
+
+    public function testCustomHeaderResponseInterfaceImmutability(): void
+    {
+        $customHeaderResponse = new CustomHeaderResponse();
+        $customHeaderResponse->withHeader(new HttpField('X-Initial', '1'));
+
+        $request = new Request(
+            Configuration::create(),
+            'http://localhost',
+            [],
+            [],
+            'GET',
+            $customHeaderResponse
+        );
+
+        $newRequest = $request->withHeader('X-New', '2');
+
+        $this->assertNotSame($request, $newRequest);
+        $this->assertTrue($newRequest->hasHeader('X-New'));
+        $this->assertFalse($request->hasHeader('X-New'));
+    }
+
+    public function testCaseInsensitiveWithHeaderReplacesExisting(): void
+    {
+        $request = new Request(
+            Configuration::create(),
+            'http://localhost',
+            ['Content-Type' => 'text/html'],
+            [],
+            'GET'
+        );
+
+        $newRequest = $request->withHeader('content-type', 'application/json');
+
+        $this->assertSame(['application/json'], $newRequest->getHeader('content-type'));
+        $this->assertSame(['application/json'], $newRequest->getHeader('Content-Type'));
+        $headers = $newRequest->getHeaders();
+        $ctCount = 0;
+        foreach (array_keys($headers) as $k) {
+            if (strcasecmp((string)$k, 'content-type') === 0) {
+                $ctCount++;
+            }
+        }
+        $this->assertSame(1, $ctCount);
+    }
+
+    public function testGetDataWithUriInterfaceAppendsQuery(): void
+    {
+        $uri1 = new Uri('https://example.com');
+        $request1 = new Request(Configuration::create(), $uri1, [], ['page' => 2], 'GET');
+        $this->assertSame('https://example.com?page=2', (string)$request1->getUri());
+        $this->assertSame('/?page=2', $request1->getRequestTarget());
+
+        $uri2 = new Uri('https://example.com?sort=asc');
+        $request2 = new Request(Configuration::create(), $uri2, [], ['page' => 2], 'GET');
+        $this->assertSame('https://example.com?sort=asc&page=2', (string)$request2->getUri());
+        $this->assertSame('/?sort=asc&page=2', $request2->getRequestTarget());
+    }
+
+    public function testJsonDetectionWithCharsetAndComplexContentType(): void
+    {
+        $optionsSet = [];
+        $curlQuery = $this->createMock(CurlQueryInterface::class);
+        $curlQuery->method('setOption')->willReturnCallback(function (int $opt, mixed $val) use (&$optionsSet): bool {
+            $optionsSet[$opt] = $val;
+
+            return true;
+        });
+
+        $config = Configuration::create();
+        $data = ['hello' => 'world'];
+
+        // Content-Type: application/json; charset=UTF-8
+        $request = new Request($config, 'http://localhost/post', ['Content-Type' => 'application/json; charset=UTF-8'], $data, 'POST', null, null, $curlQuery);
+        $request->getRequestHandle();
+        $this->assertSame(json_encode($data), $optionsSet[CURLOPT_POSTFIELDS]);
+
+        // Content-Type: application/problem+json; charset=utf-8
+        $optionsSet = [];
+        $request = new Request($config, 'http://localhost/post', ['Content-Type' => 'application/problem+json; charset=utf-8'], $data, 'POST', null, null, $curlQuery);
+        $request->getRequestHandle();
+        $this->assertSame(json_encode($data), $optionsSet[CURLOPT_POSTFIELDS]);
+
+        // Case-insensitive content-type: APPLICATION/JSON
+        $optionsSet = [];
+        $request = new Request($config, 'http://localhost/post', ['content-type' => 'APPLICATION/JSON'], $data, 'POST', null, null, $curlQuery);
+        $request->getRequestHandle();
+        $this->assertSame(json_encode($data), $optionsSet[CURLOPT_POSTFIELDS]);
+    }
+
+    public function testExplicitBodyZeroPreserved(): void
+    {
+        $optionsSet = [];
+        $curlQuery = $this->createMock(CurlQueryInterface::class);
+        $curlQuery->method('setOption')->willReturnCallback(function (int $opt, mixed $val) use (&$optionsSet): bool {
+            $optionsSet[$opt] = $val;
+
+            return true;
+        });
+
+        $config = Configuration::create();
+
+        // String body '0'
+        $request = new Request($config, 'http://localhost/post', [], [], 'POST', null, '0', $curlQuery);
+        $request->getRequestHandle();
+        $this->assertArrayHasKey(CURLOPT_POSTFIELDS, $optionsSet);
+        $this->assertSame('0', $optionsSet[CURLOPT_POSTFIELDS]);
+
+        // Stream body with '0'
+        $optionsSet = [];
+        $request = new Request($config, 'http://localhost/post', [], [], 'POST', null, new Stream('0'), $curlQuery);
+        $request->getRequestHandle();
+        $this->assertArrayHasKey(CURLOPT_POSTFIELDS, $optionsSet);
+        $this->assertSame('0', $optionsSet[CURLOPT_POSTFIELDS]);
+
+        // withBody(new Stream('0'))
+        $optionsSet = [];
+        $request = (new Request($config, 'http://localhost/post', [], [], 'POST', null, null, $curlQuery))
+            ->withBody(new Stream('0'));
+        $request->getRequestHandle();
+        $this->assertArrayHasKey(CURLOPT_POSTFIELDS, $optionsSet);
+        $this->assertSame('0', $optionsSet[CURLOPT_POSTFIELDS]);
     }
 }

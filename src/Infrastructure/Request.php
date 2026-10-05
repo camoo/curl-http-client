@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Camoo\Http\Curl\Infrastructure;
 
+use BFunky\HttpParser\Entity\HttpField;
 use Camoo\Http\Curl\Application\Query\CurlQueryInterface;
 use Camoo\Http\Curl\Domain\Entity\Configuration;
 use Camoo\Http\Curl\Domain\Entity\Stream;
@@ -33,6 +34,8 @@ class Request implements RequestInterface
 
     private ?string $requestTarget = null;
 
+    private bool $hasExplicitBody = false;
+
     public function __construct(
         private Configuration $config,
         private string|UriInterface $uri,
@@ -46,8 +49,14 @@ class Request implements RequestInterface
         $this->curlQuery = $this->curlQuery ?? new CurlRequestQuery();
         $this->validateMethod($this->method);
         $this->ensureUri();
+        $this->hasExplicitBody = $this->body !== null;
         if (is_string($this->body)) {
             $this->body = new Stream($this->body);
+        }
+
+        if ($this->headerResponse === null) {
+            $this->headerResponse = new HeaderResponse('');
+            $this->syncHeadersToHeaderResponse();
         }
     }
 
@@ -110,11 +119,28 @@ class Request implements RequestInterface
         $new = clone $this;
         $new->uri = $uri;
 
+        if ($preserveHost && $this->hasHeader('Host') && $this->getHeaderLine('Host') !== '') {
+            return $new;
+        }
+
+        $host = $uri->getHost();
+        if ($host !== '') {
+            if ($uri->getPort() !== null) {
+                $host .= ':' . $uri->getPort();
+            }
+
+            return $new->withHeader('Host', $host);
+        }
+
         return $new;
     }
 
     public function getRequestHandle(): CurlQueryInterface
     {
+        if ($this->curlQuery instanceof CurlRequestQuery && $this->curlQuery->getRawHandle() === null) {
+            $this->curlQuery = new CurlRequestQuery();
+        }
+
         $this->setRequest();
 
         return $this->curlQuery;
@@ -145,34 +171,29 @@ class Request implements RequestInterface
 
     private function ensureUri(): void
     {
-        if ($this->uri instanceof UriInterface) {
-            return;
-        }
-
-        if (empty($this->data) || $this->method !== self::GET) {
+        if (!$this->uri instanceof UriInterface) {
             $this->uri = new Uri($this->uri);
-
-            return;
         }
 
-        $uri = $this->uri;
-
-        $query = !str_contains($uri, '?') ? '?' : '&';
-        $uri .= $query;
-        $uri .= http_build_query($this->data);
-
-        $this->uri = new Uri($uri);
+        if (!empty($this->data) && $this->method === self::GET) {
+            $dataQuery = http_build_query($this->data);
+            $existingQuery = $this->uri->getQuery();
+            $query = $existingQuery !== '' ? $existingQuery . '&' . $dataQuery : $dataQuery;
+            $this->uri = $this->uri->withQuery($query);
+        }
     }
 
     private function setRequest(): void
     {
-        $userAgent = $this->getUserAgent();
-        $auth = null;
-        if (array_key_exists('auth', $this->headers)) {
-            $auth = $this->headers['auth'];
-            unset($this->headers['auth']);
-        }
         $headers = $this->headers;
+        $userAgent = $this->getUserAgent($headers);
+        unset($headers['user-agent'], $headers['User-Agent']);
+
+        $auth = null;
+        if (array_key_exists('auth', $headers)) {
+            $auth = $headers['auth'];
+            unset($headers['auth']);
+        }
 
         if (isset($headers['type'])) {
             $newHeaders = $this->mapTypeHeader($headers['type']);
@@ -183,28 +204,40 @@ class Request implements RequestInterface
         $isJson = false;
         $requestData = $this->data;
         $contentType = null;
-        if (isset($headers['Content-Type']) || isset($headers['content-type'])) {
-            $contentType = $headers['Content-Type'] ?? $headers['content-type'];
-            $isJson = $contentType === 'application/json';
+        foreach ($headers as $k => $v) {
+            if (strcasecmp((string)$k, 'content-type') === 0) {
+                $contentType = is_array($v) ? implode(', ', $v) : (string)$v;
+                break;
+            }
         }
-        if ($contentType === 'application/x-www-form-urlencoded') {
+
+        $mediaType = null;
+        if ($contentType !== null) {
+            $parts = explode(';', $contentType);
+            $mediaType = strtolower(trim($parts[0]));
+        }
+
+        $isJson = $mediaType === 'application/json' || ($mediaType !== null && str_ends_with($mediaType, '+json'));
+        if ($mediaType === 'application/x-www-form-urlencoded') {
             $requestData = http_build_query($this->data);
         }
 
         $url = (string)$this->uri;
-        if (!empty($this->headers)) {
-            $curlHeaders = array_map(
-                fn (string $val, mixed $key) => trim($key) . ': ' . trim($val),
-                $headers,
-                array_keys($headers)
-            );
+        if (!empty($headers)) {
+            $curlHeaders = [];
+            foreach ($headers as $key => $val) {
+                foreach ((array)$val as $v) {
+                    $curlHeaders[] = trim((string)$key) . ': ' . trim((string)$v);
+                }
+            }
             $this->curlQuery->setOption(CURLOPT_HTTPHEADER, $curlHeaders);
         }
 
         $this->applyCurlHttps($url);
         $this->curlQuery->setOption(CURLOPT_RETURNTRANSFER, 1);
-        $this->curlQuery->setOption(CURLOPT_FOLLOWLOCATION, true);
-        $this->curlQuery->setOption(CURLOPT_MAXREDIRS, 1);
+        $this->curlQuery->setOption(CURLOPT_FOLLOWLOCATION, $this->config->getFollowRedirects());
+        $this->curlQuery->setOption(CURLOPT_MAXREDIRS, $this->config->getMaxRedirects());
+        $this->curlQuery->setOption(CURLOPT_UNRESTRICTED_AUTH, $this->config->getUnrestrictedAuth());
         $this->curlQuery->setOption(CURLOPT_USERAGENT, $userAgent);
         $this->curlQuery->setOption(CURLOPT_HEADER, true);
         $this->applyHttpAuth($auth);
@@ -250,10 +283,18 @@ class Request implements RequestInterface
         if ($isJson && !is_string($data)) {
             $postData = json_encode($data);
         }
-        if ($this->body instanceof StreamInterface) {
-            $postData = $this->body->getContents();
+        $bodyContent = $this->body instanceof StreamInterface ? (string)$this->body : '';
+        $hasBody = $this->hasExplicitBody || $bodyContent !== '';
+        if ($hasBody) {
+            $postData = $bodyContent;
         }
-        if (!empty($data) || !empty($postData)) {
+
+        $hasPayload = $hasBody
+            || (is_string($postData) && $postData !== '')
+            || (is_array($postData) && !empty($postData))
+            || ($postData !== null && $postData !== '' && $postData !== []);
+
+        if ($hasPayload) {
             $this->curlQuery->setOption(CURLOPT_POSTFIELDS, $postData);
         }
     }
@@ -302,19 +343,37 @@ class Request implements RequestInterface
         }
     }
 
-    private function getUserAgent(): string
+    private function getUserAgent(array $headers): string
     {
-        $userAgent = $this->headers['user-agent'] ?? null;
-        if (null === $userAgent) {
-            $userAgent = $this->headers['User-Agent'] ?? null;
-        } else {
-            unset($this->headers['user-agent']);
-        }
-
-        if ($userAgent) {
-            unset($this->headers['User-Agent']);
-        }
+        $userAgent = $headers['user-agent'] ?? $headers['User-Agent'] ?? null;
 
         return $userAgent ?? $this->config->getUserAgent();
+    }
+
+    private function syncHeadersToHeaderResponse(): void
+    {
+        $headers = $this->headers;
+        if (isset($headers['type'])) {
+            $newHeaders = $this->mapTypeHeader($headers['type']);
+            unset($headers['type']);
+            $headers = array_merge($headers, $newHeaders);
+        }
+
+        foreach ($headers as $key => $value) {
+            if ($key === 'auth') {
+                continue;
+            }
+            foreach ((array)$value as $val) {
+                $this->headerResponse->withHeader(new HttpField((string)$key, (string)$val));
+            }
+        }
+
+        if (!$this->headerResponse->exists('Host') && $this->uri instanceof UriInterface && $this->uri->getHost() !== '') {
+            $host = $this->uri->getHost();
+            if ($this->uri->getPort() !== null) {
+                $host .= ':' . $this->uri->getPort();
+            }
+            $this->headerResponse->withHeader(new HttpField('Host', $host));
+        }
     }
 }

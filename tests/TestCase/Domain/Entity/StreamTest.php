@@ -120,4 +120,79 @@ class StreamTest extends TestCase
         $stream->detach();
         $this->assertSame('', $stream->__toString());
     }
+
+    public function testDetachReturnsOpenResourceWithoutClosingIt(): void
+    {
+        $stream = new Stream('detach content');
+        $resource = $stream->detach();
+        $this->assertIsResource($resource);
+        $this->assertSame('stream', get_resource_type($resource));
+
+        // Resource is still open and usable
+        rewind($resource);
+        $this->assertSame('detach content', stream_get_contents($resource));
+        fclose($resource);
+
+        // Subsequent detach returns null
+        $this->assertNull($stream->detach());
+        $this->assertNull($stream->getSize());
+        $this->assertFalse($stream->isReadable());
+        $this->assertFalse($stream->isWritable());
+        $this->assertFalse($stream->isSeekable());
+    }
+
+    /**
+     * @dataProvider modeProvider
+     */
+    public function testReadableAndWritableModes(string $mode, bool $expectedReadable, bool $expectedWritable): void
+    {
+        $tempFile = tempnam(sys_get_temp_dir(), 'stream_test_');
+        $handle = fopen($tempFile, $mode);
+        $stream = new Stream($handle);
+
+        $this->assertSame($expectedReadable, $stream->isReadable(), "Mode {$mode} readable assertion failed");
+        $this->assertSame($expectedWritable, $stream->isWritable(), "Mode {$mode} writable assertion failed");
+
+        $stream->close();
+        if (file_exists($tempFile)) {
+            @unlink($tempFile);
+        }
+    }
+
+    public function modeProvider(): array
+    {
+        return [
+            ['r', true, false],
+            ['r+', true, true],
+            ['w', false, true],
+            ['w+', true, true],
+            ['a', false, true],
+            ['a+', true, true],
+            ['c', false, true],
+            ['c+', true, true],
+        ];
+    }
+
+    public function testReadPayloadZero(): void
+    {
+        $stream = new Stream('0');
+        $this->assertSame('0', $stream->read(1));
+        $stream->rewind();
+        $this->assertSame('0', $stream->getContents());
+        $this->assertSame('0', (string)$stream);
+    }
+
+    public function testNonSeekableStreamWithUnknownSize(): void
+    {
+        $sockets = stream_socket_pair(STREAM_PF_UNIX, STREAM_SOCK_STREAM, STREAM_IPPROTO_IP);
+        fwrite($sockets[0], 'streaming payload without known size');
+        fclose($sockets[0]);
+
+        $stream = new Stream($sockets[1]);
+        $this->assertFalse($stream->isSeekable());
+        $this->assertFalse($stream->eof());
+        $this->assertSame('streaming payload without known size', $stream->getContents());
+        $this->assertTrue($stream->eof());
+        $stream->close();
+    }
 }
